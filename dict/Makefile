@@ -4,6 +4,7 @@ ENCODING ?= ISO-8859-15
 SRC      := sources
 DIST     := dist
 EXCLUDE  := $(SRC)/propernouns.txt
+BRANDS   := $(SRC)/brands.txt
 
 .PHONY: all install clean check
 
@@ -18,18 +19,25 @@ $(SRC)/de_DE.dic:
 	@exit 1
 
 # Ausschlussliste aus einem Wiktionary-Dump: alle Einträge mit Wortart
-# Vorname, Nachname, Toponym oder Eigenname. Optional – fehlt sie, laeuft
-# der Filter durch und meldet das.
+# Vorname, Nachname, Toponym oder Eigenname, abzüglich Homographen, die auch
+# ein gewöhnliches Substantiv sind (z.B. "Mühe" ist zugleich Nachname).
+# Optional – fehlt sie, laeuft der Filter durch und meldet das.
 $(EXCLUDE):
 	@echo "Hinweis: $(EXCLUDE) fehlt, Eigennamen werden nicht gefiltert."
+	@touch $@
+
+# Markennamen, die Wiktionary nicht als Eigenname führt (z.B. "Siemens" primär
+# als SI-Einheit) und die deshalb von $(EXCLUDE) nicht erfasst werden. Manuell
+# gepflegt, siehe dict/README.md.
+$(BRANDS):
 	@touch $@
 
 # --- Verarbeitung --------------------------------------------------------
 $(SRC)/fullforms.txt: $(SRC)/de_DE.dic scripts/expand.py
 	python3 scripts/expand.py $< $@ --encoding $(ENCODING)
 
-$(SRC)/filtered.txt: $(SRC)/fullforms.txt $(EXCLUDE) scripts/filter.py
-	python3 scripts/filter.py $< $@ --exclude $(EXCLUDE)
+$(SRC)/filtered.txt: $(SRC)/fullforms.txt $(EXCLUDE) $(BRANDS) scripts/filter.py
+	python3 scripts/filter.py $< $@ --exclude $(EXCLUDE) --exclude $(BRANDS)
 
 $(DIST)/$(VERSION).dawg: $(SRC)/filtered.txt scripts/build_dawg.py
 	mkdir -p $(DIST)

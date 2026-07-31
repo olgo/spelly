@@ -50,6 +50,15 @@ Liste als `sources/propernouns.txt` ablegen. `filter.py --exclude` zieht sie ab.
 Ohne diese Datei läuft die Pipeline durch und meldet es – die Liste ist dann
 aber spielerisch angreifbar.
 
+Praktisch bezogen werden kann diese Liste aus dem PyPI-Paket `german_nouns`
+(selbst aus einem Wiktionary-Dump gebaut): jedes `lemma`, dessen `pos`-Spalte
+`Toponym`, `Vorname`, `Nachname`, `Eigenname` oder `Straßenname` enthält.
+Homographen mit einem gewöhnlichen Substantiv-Eintrag (z.B. "Mühe" ist
+zugleich Nachname) dabei aussparen, sonst verschwinden Alltagswörter aus der
+Liste. Marken- und Firmennamen wie "Siemens" (dort als SI-Einheit geführt,
+nicht als Eigenname) fängt das nicht ab – die kommen manuell in
+`sources/brands.txt`, das genauso per `--exclude` eingebunden wird.
+
 Rechne damit, dass Rest bleibt. Plane die Melde-Funktion in der App ein
 (`word_reports` liegt schon im Schema) und schiebe alle paar Monate eine neue
 Wörterbuchversion nach.
