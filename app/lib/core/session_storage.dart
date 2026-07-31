@@ -37,5 +37,6 @@ class SecureSessionStorage extends LocalStorage {
 }
 
 /// Der Standardspeicher fürs Web, der sichere für die Telefone.
-LocalStorage sessionStorage() =>
-    kIsWeb ? const SharedPreferencesLocalStorage(persistSessionKey: 'supabase.session') : const SecureSessionStorage();
+LocalStorage sessionStorage() => kIsWeb
+    ? SharedPreferencesLocalStorage(persistSessionKey: 'supabase.session')
+    : const SecureSessionStorage();

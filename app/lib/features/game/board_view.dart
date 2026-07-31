@@ -130,10 +130,10 @@ class _EmptySquare extends StatelessWidget {
       padding: const EdgeInsets.all(Metrics.cellGap / 2),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: hovering ? Palette.signal.withOpacity(0.28) : premiumColour(code),
+          color: hovering ? Palette.signal.withValues(alpha: 0.28) : premiumColour(code),
           borderRadius: BorderRadius.circular(2),
           border: isCentre
-              ? Border.all(color: Palette.signal.withOpacity(0.5), width: 1)
+              ? Border.all(color: Palette.signal.withValues(alpha: 0.5), width: 1)
               : null,
         ),
         child: label.isEmpty
@@ -150,7 +150,7 @@ class _EmptySquare extends StatelessWidget {
                         height: 1,
                         letterSpacing: 0.2,
                         fontWeight: FontWeight.w600,
-                        color: Palette.text.withOpacity(0.55),
+                        color: Palette.text.withValues(alpha: 0.55),
                       ),
                     ),
                   ),
@@ -202,7 +202,7 @@ class _TileFace extends StatelessWidget {
                   // Ein eingesetzter Blanko trägt den Buchstaben blasser –
                   // sonst sieht man nach drei Zügen nicht mehr, wo er steckt.
                   color: tile.blank
-                      ? Palette.boneInk.withOpacity(0.45)
+                      ? Palette.boneInk.withValues(alpha: 0.45)
                       : Palette.boneInk,
                 ),
               ),
@@ -217,7 +217,7 @@ class _TileFace extends StatelessWidget {
                     fontSize: size * 0.24,
                     height: 1,
                     fontWeight: FontWeight.w600,
-                    color: Palette.boneInk.withOpacity(0.6),
+                    color: Palette.boneInk.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -308,7 +308,7 @@ class _ValidPreview extends StatelessWidget {
           Text(
             preview.words.map((w) => '${w.word} ${w.score}').join(' · '),
             style: TextStyle(
-              color: Palette.boneInk.withOpacity(0.72),
+              color: Palette.boneInk.withValues(alpha: 0.72),
               fontSize: 10,
               height: 1.1,
               fontWeight: FontWeight.w600,

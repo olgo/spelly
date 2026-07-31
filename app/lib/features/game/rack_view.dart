@@ -197,7 +197,7 @@ class _Face extends StatelessWidget {
                 letter,
                 style: TextStyle(
                   color: blank
-                      ? Palette.boneInk.withOpacity(0.4)
+                      ? Palette.boneInk.withValues(alpha: 0.4)
                       : Palette.boneInk,
                   fontSize: 22,
                   height: 1,
@@ -212,7 +212,7 @@ class _Face extends StatelessWidget {
                 child: Text(
                   '$value',
                   style: TextStyle(
-                    color: Palette.boneInk.withOpacity(0.6),
+                    color: Palette.boneInk.withValues(alpha: 0.6),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
