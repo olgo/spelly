@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../data/game_repository.dart';
 import '../../domain/dawg.dart';
 import '../../domain/rules.dart';
-import '../../domain/tiles.dart';
 
 /// Hält den Zustand einer offenen Partie und rechnet die Vorschau.
 ///

@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/rules.dart';
-import '../domain/tiles.dart';
 
 class GameSnapshot {
   const GameSnapshot({
