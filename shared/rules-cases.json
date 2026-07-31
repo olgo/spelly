@@ -1,0 +1,201 @@
+{
+  "_comment": [
+    "Server und Client rechnen dieselben Regeln – der Server autoritativ, der",
+    "Client für die Live-Vorschau. Zwei Implementierungen derselben Regeln sind",
+    "eine Fehlerquelle, deshalb prüfen beide Testsuiten genau diese Datei:",
+    "supabase/functions/_shared/rules.test.ts und app/test/domain/rules_test.dart.",
+    "Weicht eine der beiden ab, schlägt die CI fehl, bevor jemand ein falsches",
+    "Ergebnis auf dem Brett sieht.",
+    "",
+    "Das Wörterbuch hier ist absichtlich winzig und teils unsinnig – getestet",
+    "wird die Engine, nicht die deutsche Sprache."
+  ],
+  "dictionary": [
+    "HAUS", "MAUS", "EIS", "HE", "AI", "US", "SIEBENE", "AM", "AN"
+  ],
+  "cases": [
+    {
+      "name": "Eröffnung über die Mitte",
+      "board": [],
+      "rack": ["H", "A", "U", "S"],
+      "placements": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "expect": { "score": 10, "words": [{ "w": "HAUS", "s": 10 }] }
+    },
+    {
+      "name": "Eröffnung ohne Mittelfeld",
+      "board": [],
+      "rack": ["H", "A", "U", "S"],
+      "placements": [
+        { "r": 0, "c": 0, "l": "H", "b": false },
+        { "r": 0, "c": 1, "l": "A", "b": false },
+        { "r": 0, "c": 2, "l": "U", "b": false },
+        { "r": 0, "c": 3, "l": "S", "b": false }
+      ],
+      "error": "first_move_must_cover_center"
+    },
+    {
+      "name": "Eröffnung mit einem einzelnen Stein",
+      "board": [],
+      "rack": ["H"],
+      "placements": [{ "r": 7, "c": 7, "l": "H", "b": false }],
+      "error": "first_move_too_short"
+    },
+    {
+      "name": "Bingo: sieben Steine geben 50 Punkte extra",
+      "board": [],
+      "rack": ["S", "I", "E", "B", "E", "N", "E"],
+      "placements": [
+        { "r": 7, "c": 7, "l": "S", "b": false },
+        { "r": 7, "c": 8, "l": "I", "b": false },
+        { "r": 7, "c": 9, "l": "E", "b": false },
+        { "r": 7, "c": 10, "l": "B", "b": false },
+        { "r": 7, "c": 11, "l": "E", "b": false },
+        { "r": 7, "c": 12, "l": "N", "b": false },
+        { "r": 7, "c": 13, "l": "E", "b": false }
+      ],
+      "expect": { "score": 70, "words": [{ "w": "SIEBENE", "s": 20 }] }
+    },
+    {
+      "name": "Senkrecht durch einen bestehenden Buchstaben",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["M", "U", "S"],
+      "placements": [
+        { "r": 6, "c": 8, "l": "M", "b": false },
+        { "r": 8, "c": 8, "l": "U", "b": false },
+        { "r": 9, "c": 8, "l": "S", "b": false }
+      ],
+      "expect": { "score": 10, "words": [{ "w": "MAUS", "s": 10 }] }
+    },
+    {
+      "name": "Kreuzwörter zählen mit",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["E", "I", "S"],
+      "placements": [
+        { "r": 8, "c": 7, "l": "E", "b": false },
+        { "r": 8, "c": 8, "l": "I", "b": false },
+        { "r": 8, "c": 9, "l": "S", "b": false }
+      ],
+      "expect": {
+        "score": 12,
+        "words": [
+          { "w": "EIS", "s": 4 },
+          { "w": "HE", "s": 3 },
+          { "w": "AI", "s": 3 },
+          { "w": "US", "s": 2 }
+        ]
+      }
+    },
+    {
+      "name": "Blanko zählt null, das Prämienfeld ändert daran nichts",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["?", "U", "S"],
+      "placements": [
+        { "r": 6, "c": 8, "l": "M", "b": true },
+        { "r": 8, "c": 8, "l": "U", "b": false },
+        { "r": 9, "c": 8, "l": "S", "b": false }
+      ],
+      "expect": { "score": 4, "words": [{ "w": "MAUS", "s": 4 }] }
+    },
+    {
+      "name": "Lücke im gelegten Wort",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["M", "S"],
+      "placements": [
+        { "r": 5, "c": 8, "l": "M", "b": false },
+        { "r": 9, "c": 8, "l": "S", "b": false }
+      ],
+      "error": "gap_in_word"
+    },
+    {
+      "name": "Frei stehendes Wort ohne Anschluss",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["A", "M"],
+      "placements": [
+        { "r": 0, "c": 0, "l": "A", "b": false },
+        { "r": 0, "c": 1, "l": "M", "b": false }
+      ],
+      "error": "not_connected"
+    },
+    {
+      "name": "Stein liegt gar nicht im Rack",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["A", "U"],
+      "placements": [{ "r": 6, "c": 8, "l": "M", "b": false }],
+      "error": "tile_not_in_rack"
+    },
+    {
+      "name": "Wort steht nicht im Wörterbuch",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["X", "Y"],
+      "placements": [{ "r": 6, "c": 7, "l": "X", "b": false }],
+      "error": "invalid_word"
+    },
+    {
+      "name": "Belegtes Feld",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["M"],
+      "placements": [{ "r": 7, "c": 8, "l": "M", "b": false }],
+      "error": "square_occupied"
+    },
+    {
+      "name": "Steine liegen weder in einer Zeile noch in einer Spalte",
+      "board": [
+        { "r": 7, "c": 7, "l": "H", "b": false },
+        { "r": 7, "c": 8, "l": "A", "b": false },
+        { "r": 7, "c": 9, "l": "U", "b": false },
+        { "r": 7, "c": 10, "l": "S", "b": false }
+      ],
+      "rack": ["M", "S"],
+      "placements": [
+        { "r": 6, "c": 7, "l": "M", "b": false },
+        { "r": 8, "c": 8, "l": "S", "b": false }
+      ],
+      "error": "not_in_line"
+    }
+  ]
+}
