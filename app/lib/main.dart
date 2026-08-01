@@ -1,6 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/push.dart';
@@ -11,17 +10,18 @@ import 'data/game_repository.dart';
 import 'data/lobby_repository.dart';
 import 'features/auth/auth_page.dart';
 import 'features/lobby/lobby_page.dart';
-import 'firebase_options.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
+// Öffentlich wie die restliche Web-SDK-Konfiguration in web/index.html –
+// der Schutz kommt aus den Supabase-Policies, nicht aus Geheimhaltung.
+const oneSignalAppId = 'cec97100-f4a4-4d06-929b-80a2226fd8e4';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  OneSignal.initialize(oneSignalAppId);
 
   await Supabase.initialize(
     url: supabaseUrl,
@@ -91,9 +91,6 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _setUpPush() async {
     await _push.register();
-    _pendingGameId = await _push.initialGameId();
-    if (mounted) setState(() {});
-
     _push.openedGames.listen((gameId) {
       if (mounted) setState(() => _pendingGameId = gameId);
     });

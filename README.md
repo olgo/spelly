@@ -42,7 +42,7 @@ spelly/
 │   │   │   ├── rules.ts          Zugvalidierung und Punkte (reine Logik)
 │   │   │   ├── rules.test.ts     läuft gegen shared/rules-cases.json
 │   │   │   ├── dawg.ts           Wörterbuch-Lookup
-│   │   │   └── fcm.ts            Push-Versand
+│   │   │   └── onesignal.ts      Push-Versand
 │   │   ├── submit-move/index.ts  Zug entgegennehmen
 │   │   ├── send-push/index.ts    Warteschlange zustellen
 │   │   ├── create-game/index.ts  Partie eröffnen, Beutel mischen

@@ -26,7 +26,8 @@ applicationId = "de.spelly.app"
 **Diese Kennung entscheidet, ob eine Aktualisierung sich über die installierte
 App legt oder als zweite App daneben landet.** Sie muss also stehen, bevor das
 erste APK verschickt wird, und danach unangetastet bleiben. Sie muss ausserdem
-genau so in Firebase registriert sein.
+genau so im Firebase-Projekt registriert sein, das OneSignal für Android-Push
+nutzt.
 
 `flutter create` überschreibt `web/index.html` und `web/manifest.json` nicht,
 wenn sie schon da sind – die im Repo enthaltenen Fassungen bleiben also erhalten.
@@ -70,15 +71,19 @@ Klick in der Bestätigungsmail im Browser statt in der App.
 
 `Confirm email` bleibt eingeschaltet.
 
-### Firebase
+### OneSignal
 
-Ein Projekt, darin zwei Apps: eine Android-App und eine Web-App.
+Eine App im OneSignal-Dashboard, zwei Plattformen darin.
 
-* Android: `google-services.json` nach `app/android/app/`
-* Web: Konfigurationswerte in `app/web/firebase-messaging-sw.js` eintragen
-* Web-Push-Zertifikat erzeugen (*Project Settings → Cloud Messaging → Web
-  Push certificates*), den Schlüssel als `FCM_VAPID_KEY` an den Build geben
-* `flutterfire configure` erzeugt `app/lib/firebase_options.dart`
+* **Google Android (FCM)**: eigenes Firebase-Projekt anlegen (Google
+  verlangt das für FCM), `google-services.json` nach `app/android/app/`,
+  den privaten Service-Account-Schlüssel im OneSignal-Dashboard hinterlegen
+* **Web Push** (Typical Web Push, Custom Code): Site-URL eintragen –
+  OneSignal erzeugt die VAPID-Schlüssel selbst, keine Firebase-Web-App nötig
+* App-ID und REST API Key aus *Settings → Keys & IDs* notieren: die App-ID
+  steht in `app/web/index.html` und `app/lib/main.dart`
+  (`oneSignalAppId`), der REST API Key geht per
+  `supabase secrets set ONESIGNAL_REST_API_KEY=…` an den Server
 
 ## Android: APK
 
@@ -122,7 +127,6 @@ cd app
 flutter build web --release \
   --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=<anon-key> \
-  --dart-define=FCM_VAPID_KEY=<vapid-key> \
   --dart-define=AUTH_REDIRECT=https://spelly.example.org
 ```
 
