@@ -5,7 +5,7 @@
 // leer – die Function holt sich ihre Arbeit selbst aus der Warteschlange.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { sendPush } from "../_shared/fcm.ts";
+import { sendPush } from "../_shared/onesignal.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -143,26 +143,16 @@ Deno.serve(async (req) => {
   if (!jobs?.length) return Response.json({ processed: 0 });
 
   let sent = 0;
-  let dropped = 0;
+  let noRecipient = 0;
 
   for (const row of jobs as QueueRow[]) {
     try {
-      // Empfänger, Gegner und Geräte in einem Rutsch.
-      const [profileRes, playersRes, devicesRes, gameRes] = await Promise.all([
+      // Empfänger, Gegner und Partie in einem Rutsch.
+      const [profileRes, playersRes, gameRes] = await Promise.all([
         db.from("profiles").select("display_name, locale").eq("id", row.recipient_id).single(),
         db.from("game_players").select("player_id, score, profiles(display_name)").eq("game_id", row.game_id),
-        db.from("devices").select("id, fcm_token").eq("user_id", row.recipient_id),
         db.from("games").select("winner_id").eq("id", row.game_id).single(),
       ]);
-
-      const devices = devicesRes.data ?? [];
-      if (devices.length === 0) {
-        // Kein Gerät registriert – nichts zuzustellen, aber auch kein Fehler.
-        await db.from("notification_queue")
-          .update({ state: "sent", sent_at: new Date().toISOString(), last_error: "no_devices" })
-          .eq("id", row.id);
-        continue;
-      }
 
       const opponent = (playersRes.data ?? []).find((p) => p.player_id !== row.recipient_id);
       const opponentName =
@@ -175,48 +165,39 @@ Deno.serve(async (req) => {
       // Badge: in wie vielen aktiven Partien ist der Empfänger am Zug?
       const { data: badge } = await db.rpc("turns_waiting", { p_user: row.recipient_id });
 
-      const results = await Promise.all(
-        devices.map((d) =>
-          sendPush({
-            token: d.fcm_token,
-            title,
-            body,
-            badge: badge ?? undefined,
-            // Eine neuere Meldung zur selben Partie ersetzt die ältere.
-            collapseKey: `game_${row.game_id}`,
-            data: {
-              game_id: row.game_id,
-              kind: row.kind,
-              // Der Client öffnet damit direkt die richtige Partie.
-              route: `/game/${row.game_id}`,
-            },
-          }).then((result) => ({ deviceId: d.id, result }))
-        ),
-      );
+      const result = await sendPush({
+        externalUserId: row.recipient_id,
+        title,
+        body,
+        badge: badge ?? undefined,
+        // Eine neuere Meldung zur selben Partie ersetzt die ältere.
+        collapseKey: `game_${row.game_id}`,
+        data: {
+          game_id: row.game_id,
+          kind: row.kind,
+          // Der Client öffnet damit direkt die richtige Partie.
+          route: `/game/${row.game_id}`,
+        },
+      });
 
-      // Tote Tokens sofort entfernen – sie werden sonst bei jedem Zug erneut
-      // angefragt und zählen gegen das FCM-Kontingent.
-      const dead = results.filter((r) => r.result === "invalid_token").map((r) => r.deviceId);
-      if (dead.length) {
-        await db.from("devices").delete().in("id", dead);
-        dropped += dead.length;
+      if (result === "retry") {
+        // Zurück in die Schlange, claim_notifications holt den Eintrag beim
+        // nächsten Lauf erneut (max. 5 Versuche).
+        await db.from("notification_queue")
+          .update({ state: "failed", last_error: "onesignal_retry" })
+          .eq("id", row.id);
+        continue;
       }
 
-      const anySent = results.some((r) => r.result === "sent");
-      const anyRetry = results.some((r) => r.result === "retry");
-
-      if (anySent || !anyRetry) {
-        await db.from("notification_queue")
-          .update({ state: "sent", sent_at: new Date().toISOString() })
-          .eq("id", row.id);
-        if (anySent) sent++;
-      } else {
-        // Alles auf retry: zurück in die Schlange, claim_notifications holt
-        // den Eintrag beim nächsten Lauf erneut (max. 5 Versuche).
-        await db.from("notification_queue")
-          .update({ state: "failed", last_error: "fcm_retry" })
-          .eq("id", row.id);
-      }
+      await db.from("notification_queue")
+        .update({
+          state: "sent",
+          sent_at: new Date().toISOString(),
+          ...(result === "no_recipient" ? { last_error: "no_recipient" } : {}),
+        })
+        .eq("id", row.id);
+      if (result === "sent") sent++;
+      else noRecipient++;
     } catch (err) {
       console.error(`notification ${row.id} failed`, err);
       await db.from("notification_queue")
@@ -225,5 +206,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return Response.json({ processed: jobs.length, sent, dropped_tokens: dropped });
+  return Response.json({ processed: jobs.length, sent, no_recipient: noRecipient });
 });

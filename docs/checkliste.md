@@ -4,7 +4,7 @@ Reihenfolge ist nicht beliebig – jeder Abschnitt braucht Ergebnisse aus dem
 vorherigen. Grob gerechnet ein langer Nachmittag, wenn nichts klemmt.
 
 **Was du nicht brauchst:** keinen Mac, kein Apple-Entwicklerkonto, keinen
-APNs-Schlüssel. iOS läuft als Web-App, und Web-Push geht über Firebase. Bauen
+APNs-Schlüssel. iOS läuft als Web-App, und Web-Push geht über OneSignal. Bauen
 lässt sich alles unter Linux oder Windows.
 
 ---
@@ -22,7 +22,10 @@ lässt sich alles unter Linux oder Windows.
 
 - [ ] **Supabase**-Projekt, Region Frankfurt oder Zürich. Projekt-Ref und
       `anon key` notieren, `service_role key` gut wegpacken
-- [ ] **Firebase**-Projekt
+- [ ] **OneSignal**-Account samt App. App-ID notieren
+- [ ] **Firebase**-Projekt – wird von OneSignal für Android-Push gebraucht
+      (Google verlangt das für FCM, unabhängig vom Push-Anbieter). Wird nur
+      im OneSignal-Dashboard hinterlegt, taucht sonst nirgends im Code auf
 - [ ] **Mailversand**: Resend, Postmark oder Mailgun. Kostenloses Kontingent
       reicht; du brauchst SMTP-Host, Port, Benutzer, Passwort
 - [ ] **Webspeicher mit HTTPS** für die Web-App und die APK-Datei.
@@ -76,7 +79,7 @@ lässt sich alles unter Linux oder Windows.
       - Redirect URLs: `https://spelly.example.org/**` und
         `spelly://login-callback`
 
-## 5. Firebase einrichten
+## 5. OneSignal einrichten
 
 - [ ] Plattform-Ordner anlegen, damit die Android-Kennung feststeht:
       `cd app && flutter create --org de.spelly --project-name spelly --platforms=android,web .`
@@ -87,28 +90,27 @@ lässt sich alles unter Linux oder Windows.
 - [ ] In `AndroidManifest.xml`: `android:label="Spelly"` setzen und den
       `intent-filter` für `spelly://login-callback` ergänzen
       (Wortlaut in `docs/distribution.md`)
-- [ ] Firebase: **Android-App** mit genau dieser Kennung registrieren,
-      `google-services.json` nach `app/android/app/`
-- [ ] Firebase: **Web-App** registrieren, die fünf Konfigurationswerte in
-      `app/web/firebase-messaging-sw.js` eintragen
-- [ ] *Cloud Messaging → Web Push certificates*: Schlüsselpaar erzeugen, den
-      öffentlichen Schlüssel notieren (der VAPID-Key)
-- [ ] *Project Settings → Service accounts*: privaten Schlüssel als JSON
-      erzeugen
-- [ ] `flutterfire configure` – erzeugt `app/lib/firebase_options.dart`
+- [ ] OneSignal-App → Plattform **Google Android (FCM)**: Firebase-Projekt
+      mit genau dieser Android-Kennung anlegen, `google-services.json` nach
+      `app/android/app/`; unter *Project Settings → Service accounts* einen
+      privaten Schlüssel als JSON erzeugen und im OneSignal-Dashboard hochladen
+- [ ] OneSignal-App → Plattform **Web Push** (Typical Web Push, Custom Code):
+      Site-URL eintragen. OneSignal erzeugt VAPID-Schlüssel selbst, dafür ist
+      keine Firebase-Web-App nötig
+- [ ] *Settings → Keys & IDs*: **App-ID** und **REST API Key** notieren
+- [ ] App-ID in `app/web/index.html` und `app/lib/main.dart`
+      (`oneSignalAppId`) eintragen, falls sie sich geändert hat
 
 ## 6. Server-Geheimnisse setzen
 
 ```bash
 supabase secrets set \
-  FCM_PROJECT_ID=<projekt-id> \
-  FCM_CLIENT_EMAIL=<client_email aus der JSON> \
-  FCM_PRIVATE_KEY="$(jq -r .private_key service-account.json)" \
+  ONESIGNAL_APP_ID=<app-id> \
+  ONESIGNAL_REST_API_KEY=<rest-api-key> \
   DICT_VERSION=de-2026.1
 ```
 
-- [ ] gesetzt. Beim `FCM_PRIVATE_KEY` auf die Zeilenumbrüche achten – das ist
-      die häufigste Fehlerquelle beim Push
+- [ ] gesetzt
 
 ## 7. Edge Functions ausrollen
 
@@ -137,7 +139,6 @@ cd app
 flutter build web --release \
   --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=<anon-key> \
-  --dart-define=FCM_VAPID_KEY=<vapid-key> \
   --dart-define=AUTH_REDIRECT=https://spelly.example.org
 ```
 

@@ -1,12 +1,15 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Push-Anmeldung für beide Welten.
 ///
-/// Nativ holt FCM den Token vom Betriebssystem. Im Browser braucht es
-/// zusätzlich den VAPID-Schlüssel aus der Firebase-Konsole und einen
-/// Service Worker (web/firebase-messaging-sw.js).
+/// OneSignal übernimmt die Geräte-Registrierung selbst (App-ID kommt aus
+/// `web/index.html` bzw. dem nativen `OneSignal.initialize`-Aufruf in
+/// `main.dart`). Was hier passiert, ist nur: um Erlaubnis fragen und den
+/// Supabase-Nutzer per `login` mit der OneSignal-Subscription verknüpfen,
+/// damit der Server über die `external_id` gezielt zustellen kann.
 ///
 /// Auf iOS im Browser funktioniert Web-Push nur, wenn die Seite über
 /// "Zum Home-Bildschirm" installiert wurde. Deshalb meldet [register] zurück,
@@ -16,52 +19,29 @@ class PushService {
   PushService(this._client);
   final SupabaseClient _client;
 
-  static const _vapidKey = String.fromEnvironment('FCM_VAPID_KEY');
+  final _openedGames = StreamController<String>.broadcast();
 
   Future<bool> register() async {
     final user = _client.auth.currentUser;
     if (user == null) return false;
 
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      return false;
-    }
+    final granted = await OneSignal.Notifications.requestPermission(true);
+    if (!granted) return false;
 
-    final token = await messaging.getToken(
-      vapidKey: kIsWeb && _vapidKey.isNotEmpty ? _vapidKey : null,
-    );
-    if (token == null) return false;
+    // Verknüpft dieses Gerät mit dem Supabase-Nutzer als OneSignal
+    // external_id – darüber zielt der Server, ganz ohne eigene Token-Tabelle.
+    await OneSignal.login(user.id);
 
-    await _save(user.id, token);
+    OneSignal.Notifications.addClickListener((event) {
+      final gameId = event.notification.additionalData?['game_id'] as String?;
+      if (gameId != null) _openedGames.add(gameId);
+    });
 
-    // FCM erneuert Tokens gelegentlich von sich aus.
-    messaging.onTokenRefresh.listen((fresh) => _save(user.id, fresh));
     return true;
   }
 
-  Future<void> _save(String userId, String token) => _client.from('devices').upsert(
-        {
-          'user_id': userId,
-          'fcm_token': token,
-          'platform': kIsWeb
-              ? 'web'
-              : defaultTargetPlatform == TargetPlatform.iOS
-                  ? 'ios'
-                  : 'android',
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'fcm_token',
-      );
-
-  /// Partie-ID aus einer angetippten Meldung, falls die App darüber startete.
-  Future<String?> initialGameId() async {
-    final message = await FirebaseMessaging.instance.getInitialMessage();
-    return message?.data['game_id'] as String?;
-  }
-
-  Stream<String> get openedGames => FirebaseMessaging.onMessageOpenedApp
-      .map((m) => m.data['game_id'])
-      .where((id) => id is String)
-      .cast<String>();
+  /// Partie-ID aus einer angetippten Meldung. Liefert auch den Fall ab, dass
+  /// die App über den Tap erst gestartet wurde – OneSignal reicht diesen
+  /// Klick nach, sobald der Listener registriert ist.
+  Stream<String> get openedGames => _openedGames.stream;
 }
