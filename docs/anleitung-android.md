@@ -1,7 +1,6 @@
 # Spelly auf Android installieren
 
-Dauert etwa fünf Minuten. Du brauchst den Download-Link und Zugriff auf dein
-E-Mail-Postfach.
+Dauert etwa fünf Minuten. Du brauchst nur den Download-Link.
 
 > **Vorab, damit du nicht erschrickst:** Android wird dich zwei- oder dreimal
 > warnen, dass diese App nicht aus dem Play Store kommt. Das ist erwartbar und
@@ -46,26 +45,18 @@ App zur Prüfung zu senden, kannst du ablehnen.
 App öffnen, **Neu hier? Konto anlegen** antippen und eintragen:
 
 - **Anzeigename** – so sehen dich die anderen in der Spielerliste
-- **E-Mail** – eine, in die du gleich hineinschauen kannst
+- **E-Mail** – deine Adresse, damit du dich später wieder anmelden kannst
 - **Passwort** – mindestens acht Zeichen, zweimal eingeben
 
-## 4. E-Mail bestätigen
+## 4. Benachrichtigungen erlauben
 
-Du bekommst eine Mail. Tippe den Link darin an. Ohne diesen Schritt geht die
-Anmeldung nicht.
-
-Nichts angekommen? Schau in den Spam-Ordner. Falls dort auch nichts ist: zurück
-in die App, **Mail nochmal senden**.
-
-## 5. Anmelden und Benachrichtigungen erlauben
-
-Melde dich mit E-Mail und Passwort an. Die App fragt nach Erlaubnis für
-Benachrichtigungen – **sag ja**. Sonst erfährst du nicht, wenn du am Zug bist,
-und das Spiel steht.
+Nach dem Anlegen des Kontos bist du direkt angemeldet. Die App fragt jetzt
+nach Erlaubnis für Benachrichtigungen – **sag ja**. Sonst erfährst du nicht,
+wenn du am Zug bist, und das Spiel steht.
 
 Ab jetzt bleibst du angemeldet. Du musst das Passwort nicht wieder eingeben.
 
-## 6. Losspielen
+## 5. Losspielen
 
 Reiter **Spieler:innen** öffnen, jemanden aussuchen, **Herausfordern**. Die
 Person bekommt eine Meldung und kann annehmen oder ablehnen. Sobald sie
@@ -85,9 +76,6 @@ Benachrichtigungen* prüfen. Manche Hersteller (Samsung, Xiaomi, Huawei, Oppo)
 schalten Apps zum Stromsparen ab; suche dort nach *Akku* und nimm Spelly von
 der Optimierung aus.
 
-**Anmeldung schlägt fehl mit „noch nicht bestätigt"** – der Link in der Mail
-wurde noch nicht angetippt. Siehe Schritt 4.
-
 ## Aktualisierungen
 
 Es gibt keine automatischen Updates, weil die App nicht über den Play Store
@@ -105,7 +93,7 @@ alte, deine Partien bleiben.
 > das ist normal, einfach durchklicken („Trotzdem herunterladen", „Aus dieser
 > Quelle zulassen", „Trotzdem installieren").
 >
-> Dann Konto anlegen, den Link in der Bestätigungsmail antippen, anmelden und
-> Benachrichtigungen erlauben. Ohne die erfährst du nicht, wenn du am Zug bist.
+> Dann Konto anlegen und Benachrichtigungen erlauben. Ohne die erfährst du
+> nicht, wenn du am Zug bist.
 >
 > Zum Spielen: Reiter „Spieler:innen", jemanden herausfordern.

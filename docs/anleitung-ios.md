@@ -1,7 +1,6 @@
 # Spelly auf dem iPhone installieren
 
-Dauert etwa fünf Minuten. Du brauchst den Link und Zugriff auf dein
-E-Mail-Postfach.
+Dauert etwa fünf Minuten. Du brauchst nur den Link.
 
 > **Zwei Dinge, an denen es sonst scheitert:**
 >
@@ -45,25 +44,18 @@ Ab jetzt immer so – nicht mehr über Safari.
 **Neu hier? Konto anlegen** antippen und eintragen:
 
 - **Anzeigename** – so sehen dich die anderen in der Spielerliste
-- **E-Mail** – eine, in die du gleich hineinschauen kannst
+- **E-Mail** – deine Adresse, damit du dich später wieder anmelden kannst
 - **Passwort** – mindestens acht Zeichen, zweimal eingeben
 
-## 5. E-Mail bestätigen
+## 5. Benachrichtigungen erlauben
 
-Du bekommst eine Mail. Tippe den Link darin an. Ohne diesen Schritt geht die
-Anmeldung nicht.
-
-Nichts angekommen? Schau in den Spam-Ordner. Falls dort auch nichts ist: zurück
-in die App, **Mail nochmal senden**.
-
-## 6. Anmelden und Benachrichtigungen erlauben
-
-Melde dich an. Die App fragt nach Erlaubnis für Benachrichtigungen – **sag ja**.
-Sonst erfährst du nicht, wenn du am Zug bist, und das Spiel steht still.
+Nach dem Anlegen des Kontos bist du direkt angemeldet. Die App fragt jetzt
+nach Erlaubnis für Benachrichtigungen – **sag ja**. Sonst erfährst du nicht,
+wenn du am Zug bist, und das Spiel steht still.
 
 Ab jetzt bleibst du angemeldet.
 
-## 7. Losspielen
+## 6. Losspielen
 
 Reiter **Spieler:innen** öffnen, jemanden aussuchen, **Herausfordern**. Die
 Person bekommt eine Meldung und kann annehmen oder ablehnen.
@@ -110,5 +102,5 @@ musst nichts tun.
 > Und ohne diesen Schritt kommen keine Benachrichtigungen an, dann erfährst du
 > nie, dass du am Zug bist.
 >
-> Dann Konto anlegen, Link in der Bestätigungsmail antippen, anmelden,
-> Benachrichtigungen erlauben. Zum Spielen: Reiter „Spieler:innen".
+> Dann Konto anlegen und Benachrichtigungen erlauben. Zum Spielen: Reiter
+> „Spieler:innen".
