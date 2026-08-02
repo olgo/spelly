@@ -66,12 +66,20 @@ class GameController extends ChangeNotifier {
     _dictReady = true;
     _recompute();
 
-    _repo.watchGame(_gameId).listen((snapshot) {
-      _snapshot = snapshot;
-      // Ein Zug des Gegners macht eigene Ablagen hinfällig.
-      if (_pending.isNotEmpty && !snapshot.isMyTurn) _pending.clear();
-      _recompute();
-    });
+    _repo.watchGame(_gameId).listen(
+      (snapshot) {
+        _snapshot = snapshot;
+        // Ein Zug des Gegners macht eigene Ablagen hinfällig.
+        if (_pending.isNotEmpty && !snapshot.isMyTurn) _pending.clear();
+        _recompute();
+      },
+      // Ein einzelnes fehlgeschlagenes Update darf die Verbindung nicht
+      // stillschweigend abwürgen - beim nächsten Zug kommt sonst nie wieder
+      // eine Aktualisierung an.
+      onError: (Object error) {
+        debugPrint('watchGame update failed: $error');
+      },
+    );
   }
 
   // ---------- Steine bewegen ----------
