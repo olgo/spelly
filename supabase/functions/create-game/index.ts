@@ -19,7 +19,7 @@ const DICT_VERSION = Deno.env.get("DICT_VERSION") ?? "de-2026.1";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const json = (body: unknown, status = 200) =>
