@@ -86,7 +86,12 @@ export function loadDawg(supabaseUrl: string, serviceKey: string, version: strin
   cached = (async () => {
     const res = await fetch(
       `${supabaseUrl}/storage/v1/object/dict/${version}.dawg`,
-      { headers: { Authorization: `Bearer ${serviceKey}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        },
+      },
     );
     if (!res.ok) throw new Error(`dict_fetch_failed_${res.status}`);
     return Dawg.fromBuffer(await res.arrayBuffer(), version);
