@@ -1,3 +1,4 @@
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Grund, warum eine Anmeldung nicht geklappt hat – in Codes, damit die
@@ -84,12 +85,10 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
-    // Beim Abmelden das Push-Token entfernen, sonst bekommt das Gerät weiter
-    // Meldungen für ein Konto, das hier niemand mehr benutzt.
-    final id = user?.id;
-    if (id != null) {
-      await _client.from('devices').delete().eq('user_id', id);
-    }
+    // Beim Abmelden die OneSignal-Subscription vom Nutzer lösen, sonst
+    // bekommt das Gerät weiter Meldungen für ein Konto, das hier niemand
+    // mehr benutzt.
+    await OneSignal.logout();
     await _client.auth.signOut();
   }
 
