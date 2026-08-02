@@ -15,69 +15,99 @@ lässt sich alles unter Linux oder Windows.
 - [ ] Android SDK – kommt mit Android Studio, `flutter doctor` sagt dir, was fehlt
 - [ ] JDK (für `keytool`, steckt in Android Studio)
 - [ ] Python 3.11+ (Wörterbuch-Pipeline)
-- [ ] Supabase CLI
+- [x] Supabase CLI
 - [ ] Deno – nur, wenn du die Regeltests lokal laufen lassen willst
 
 ## 1. Konten anlegen
 
-- [ ] **Supabase**-Projekt, Region Frankfurt oder Zürich. Projekt-Ref und
+- [x] **Supabase**-Projekt, Region Frankfurt oder Zürich. Projekt-Ref und
       `anon key` notieren, `service_role key` gut wegpacken
-- [ ] **OneSignal**-Account samt App. App-ID notieren
+- [x] **OneSignal**-Account samt App. App-ID notieren
 - [ ] **Firebase**-Projekt – wird von OneSignal für Android-Push gebraucht
       (Google verlangt das für FCM, unabhängig vom Push-Anbieter). Wird nur
       im OneSignal-Dashboard hinterlegt, taucht sonst nirgends im Code auf
 - [ ] **Mailversand**: Resend, Postmark oder Mailgun. Kostenloses Kontingent
       reicht; du brauchst SMTP-Host, Port, Benutzer, Passwort
-- [ ] **Webspeicher mit HTTPS** für die Web-App und die APK-Datei.
+      > **Abweichung (2026-08-02):** Resend-Account existiert, aber ohne
+      > eigene Domain lässt sich damit nicht an die Freundesrunde
+      > verschicken. Für den Start stattdessen `Confirm email` ausgeschaltet
+      > (siehe Abschnitt 4) – Mailversand bleibt offen, falls später doch
+      > eine Domain dazukommt.
+- [x] **Webspeicher mit HTTPS** für die Web-App und die APK-Datei.
       Cloudflare Pages, Netlify oder Vercel, alle kostenlos.
       Ohne HTTPS gibt es kein Push
+      > **Abweichung:** GitHub Pages statt der drei Vorschläge – erfüllt
+      > ebenfalls HTTPS, ist aber noch nicht mit der Web-App bestückt
+      > (Abschnitt 9 steht noch aus). Achtung beim Web-Build:
+      > GitHub Pages liegt normalerweise unter einem Unterverzeichnis
+      > (`https://<user>.github.io/spelly/`), das braucht `--base-href`
+      > beim `flutter build web`.
 
 > Hinweis zum kostenlosen Supabase-Tarif: Projekte werden nach einer Woche ohne
 > Zugriff schlafen gelegt. Solange jemand spielt, passiert das nicht. Legt die
 > Runde eine längere Pause ein, musst du das Projekt im Dashboard wieder
 > aufwecken – und die Zeitpläne für Erinnerungen laufen bis dahin nicht.
 
-## 2. Wörterbuch bauen
+## 2. Wörterbuch bauen ✅ erledigt (2026-08-02)
 
-- [ ] `de_DE.dic` und `de_DE.aff` von igerman98 nach `dict/sources/` legen
-- [ ] Optional, aber empfohlen: Eigennamen-Liste aus einem Wiktionary-Dump als
-      `dict/sources/propernouns.txt` (siehe `dict/README.md`)
-- [ ] `cd dict && make`
-- [ ] `make check` – muss bestehen
-- [ ] Die ausgegebene Liste der zweibuchstabigen Wörter einmal durchsehen. Die
-      entscheiden im Spiel überproportional viel
-- [ ] `make install` (kopiert nach `app/assets/dict/`)
+- [x] `de_DE.dic` und `de_DE.aff` von igerman98 nach `dict/sources/` legen
+      > Bezogen über den ONLYOFFICE/dictionaries-Mirror (`de.wiktionary.org`
+      > war in der Bau-Umgebung durch eine Netzwerk-Policy blockiert).
+      > Achtung: diese Fassung ist UTF-8-kodiert, nicht Latin-9 wie im
+      > Makefile hinterlegt – gebaut mit `ENCODING=UTF-8`.
+- [x] Eigennamen-Liste als `dict/sources/propernouns.txt`
+      > **Behelfslösung, keine echte Wiktionary-Ableitung**: CC BY 3.0 DE
+      > lizenzierte Vornamen (Stadt Köln Open Data) plus handgeschriebene
+      > Nach-/Ortsnamen. Rechnet damit, dass noch Eigennamen im Wortschatz
+      > übrig sind – bei Gelegenheit mit echtem Wiktionary-Zugriff neu bauen.
+- [x] `cd dict && make ENCODING=UTF-8`
+- [x] `make check` – bestanden (541.339 Wörter, 1.01 MB)
+- [x] Zweibuchstaben-Liste durchgesehen und in drei Runden bereinigt
+      (114 → 30 Wörter, reine Abkürzungen/Kürzel raus)
+- [x] `make install` → `app/assets/dict/de-2026.1.dawg`
 
-## 3. Datenbank aufsetzen
+## 3. Datenbank aufsetzen ✅ erledigt (2026-08-02)
 
-- [ ] `supabase link --project-ref <ref>`
+- [x] `supabase link --project-ref <ref>`
 - [ ] Im Dashboard unter *Database → Extensions* prüfen, dass `pg_net` und
       `pg_cron` verfügbar sind
-- [ ] `supabase db push` – spielt alle sechs Migrationen ein
-- [ ] `supabase test db` – die RLS-Tests müssen durchlaufen. **Nicht
-      überspringen.** Ein Loch in der `racks`-Policy merkt man im Betrieb nicht,
-      weil die App das gegnerische Rack ohnehin nicht anzeigt
-- [ ] Storage-Bucket `dict` anlegen (privat) und die `.dawg` hochladen –
-      im Dashboard oder mit
-      `supabase storage cp dict/dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg`
-- [ ] Zwei Vault-Einträge anlegen, sonst verschickt der Server keine
-      Benachrichtigungen:
-      ```sql
-      select vault.create_secret(
-        'https://<ref>.supabase.co/functions/v1/send-push', 'push_function_url');
-      select vault.create_secret('<service-role-key>', 'service_role_key');
-      ```
+      > Nicht extra geprüft – die Migration legt beide Extensions selbst an
+      > (`create extension if not exists ...` in `notifications.sql`), das
+      > lief beim `db push` anstandslos durch.
+- [x] `supabase db push` – spielt alle Migrationen ein
+      > Beim ersten lokalen `supabase test db` fielen dabei fünf echte Bugs
+      > auf (siehe PRs #5–#9): ein Testdaten-Konflikt mit `handle_new_user`,
+      > fehlende Vault-Einträge für den Push-Trigger, und drei fehlende
+      > `GRANT`-Statements auf `games`/`racks`/`game_secrets`/
+      > `notification_queue`, ohne die Supabase-Projekte normalerweise vom
+      > Plattform-Bootstrap bekommen. Alles gefixt und nachträglich als neue
+      > Migrationen ergänzt (nie alte Migrationen verändert).
+- [x] `supabase test db` – **18 von 18 Tests grün**
+- [x] Storage-Bucket `dict` angelegt (privat) und `.dawg` hochgeladen
+      > `supabase storage cp ... --experimental` – das Flag ist bei
+      > aktuellen CLI-Versionen zusätzlich nötig, stand ursprünglich nicht
+      > in dieser Checkliste
+- [x] Zwei Vault-Einträge angelegt (`push_function_url`, `service_role_key`)
 
 ## 4. Anmeldung einrichten
 
 - [ ] *Authentication → Emails → SMTP Settings*: Zugangsdaten deines
       Mailversands eintragen. Der eingebaute Versand ist so stark gedrosselt,
       dass eure erste Registrierungsrunde hängenbleibt
-- [ ] *Authentication → Providers → Email*: `Confirm email` eingeschaltet lassen
+      > Übersprungen, siehe Abweichung bei „Mailversand" in Abschnitt 1.
+- [x] *Authentication → Sign In / Providers → Email*: `Confirm email`
+      **bewusst ausgeschaltet** (Abweichung von der ursprünglichen Empfehlung
+      „eingeschaltet lassen") – ohne Mailversand käme sonst niemand über die
+      Bestätigungsmail hinaus ins Konto. Passwort-Zurücksetzen läuft bis auf
+      Weiteres nur manuell über dich im Dashboard. Code in `auth_page.dart`
+      ist entsprechend angepasst (kein Bestätigungshinweis, keine toten
+      Mail-Buttons mehr)
 - [ ] *Authentication → URL Configuration*:
       - Site URL: `https://spelly.example.org`
       - Redirect URLs: `https://spelly.example.org/**` und
         `spelly://login-callback`
+      > Noch offen – hier muss die echte GitHub-Pages-Adresse rein, sobald
+      > die Web-App dort liegt (Abschnitt 9).
 
 ## 5. OneSignal einrichten
 
@@ -97,11 +127,11 @@ lässt sich alles unter Linux oder Windows.
 - [ ] OneSignal-App → Plattform **Web Push** (Typical Web Push, Custom Code):
       Site-URL eintragen. OneSignal erzeugt VAPID-Schlüssel selbst, dafür ist
       keine Firebase-Web-App nötig
-- [ ] *Settings → Keys & IDs*: **App-ID** und **REST API Key** notieren
-- [ ] App-ID in `app/web/index.html` und `app/lib/main.dart`
-      (`oneSignalAppId`) eintragen, falls sie sich geändert hat
+- [x] *Settings → Keys & IDs*: **App-ID** und **REST API Key** notiert
+- [x] App-ID in `app/web/index.html` und `app/lib/main.dart`
+      (`oneSignalAppId`) eingetragen: `cec97100-f4a4-4d06-929b-80a2226fd8e4`
 
-## 6. Server-Geheimnisse setzen
+## 6. Server-Geheimnisse setzen ✅ erledigt (2026-08-02)
 
 ```bash
 supabase secrets set \
@@ -110,9 +140,9 @@ supabase secrets set \
   DICT_VERSION=de-2026.1
 ```
 
-- [ ] gesetzt
+- [x] gesetzt
 
-## 7. Edge Functions ausrollen
+## 7. Edge Functions ausrollen ✅ erledigt (2026-08-02)
 
 ```bash
 supabase functions deploy submit-move
@@ -120,7 +150,7 @@ supabase functions deploy create-game
 supabase functions deploy send-push
 ```
 
-- [ ] alle drei durch
+- [x] alle drei durch
 
 ## 8. Symbole und Prüfläufe
 
@@ -191,7 +221,7 @@ blockiert den ersten Versand nicht:
 
 | Lücke | Auswirkung |
 |---|---|
-| Passwort-Zurücksetzen | Die Mail geht raus, aber es fehlt der Bildschirm zum Eingeben des neuen Passworts. Bis dahin setzt du Passwörter im Dashboard zurück |
+| Passwort-Zurücksetzen | Ohne Mailversand (siehe Abschnitt 1/4) gibt es aktuell keinen Selbstbedienungsweg. Bis dahin setzt du Passwörter im Dashboard zurück |
 | Versionsprüfung im Client | `app_release` ist angelegt und wird gelesen, aber noch nicht angezeigt. Bis dahin sagst du selbst Bescheid, wenn ein neues APK da ist |
 | Bildschirm zum Partieende | Die Schlussabrechnung läuft serverseitig korrekt, es fehlt die Anzeige. Momentan steht nur „Beendet" mit dem Endstand |
 | Steine tauschen | Server und Repository können es, es gibt keinen Knopf |
