@@ -141,8 +141,14 @@ class GameController extends ChangeNotifier {
 
   Future<void> pass() async {
     _pending.clear();
-    await _repo.pass(_gameId);
-    _snapshot = await _repo.loadGame(_gameId);
-    notifyListeners();
+    _lastError = null;
+    try {
+      await _repo.pass(_gameId);
+      _snapshot = await _repo.loadGame(_gameId);
+    } catch (_) {
+      _lastError = 'pass_failed';
+    } finally {
+      notifyListeners();
+    }
   }
 }

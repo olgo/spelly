@@ -87,8 +87,11 @@ class AuthRepository {
   Future<void> signOut() async {
     // Beim Abmelden die OneSignal-Subscription vom Nutzer lösen, sonst
     // bekommt das Gerät weiter Meldungen für ein Konto, das hier niemand
-    // mehr benutzt.
-    await OneSignal.logout();
+    // mehr benutzt. Best effort: darf das eigentliche Abmelden nicht
+    // blockieren, falls OneSignal (noch) nicht erreichbar ist.
+    try {
+      await OneSignal.logout().timeout(const Duration(seconds: 3));
+    } catch (_) {}
     await _client.auth.signOut();
   }
 
