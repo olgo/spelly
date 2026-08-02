@@ -51,13 +51,8 @@ class _AuthPageState extends State<AuthPage> {
           password: _password.text,
           displayName: _name.text,
         );
-        setState(() {
-          _notice = 'Wir haben dir eine Mail geschickt. Bestätige die Adresse, '
-              'dann kannst du dich anmelden.';
-          _mode = _Mode.signIn;
-          _password.clear();
-          _repeat.clear();
-        });
+        // Ohne Mailversand ist die Anmeldung sofort aktiv - der AuthGate in
+        // main.dart schaltet von selbst zur Lobby weiter.
       } else {
         await widget.auth.signIn(
           email: _email.text,
@@ -70,31 +65,6 @@ class _AuthPageState extends State<AuthPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  Future<void> _resend() async {
-    if (_email.text.trim().isEmpty) {
-      setState(() => _error = 'Trag zuerst deine Adresse ein.');
-      return;
-    }
-    await widget.auth.resendConfirmation(_email.text);
-    setState(() {
-      _error = null;
-      _notice = 'Bestätigungsmail ist noch einmal unterwegs.';
-    });
-  }
-
-  Future<void> _reset() async {
-    if (_email.text.trim().isEmpty) {
-      setState(() => _error = 'Trag zuerst deine Adresse ein.');
-      return;
-    }
-    await widget.auth.sendPasswordReset(_email.text);
-    setState(() {
-      _error = null;
-      _notice = 'Wenn es das Konto gibt, ist die Mail zum Zurücksetzen '
-          'unterwegs.';
-    });
   }
 
   @override
@@ -250,21 +220,6 @@ class _AuthPageState extends State<AuthPage> {
                             : 'Neu hier? Konto anlegen',
                       ),
                     ),
-
-                    if (!_isSignUp)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: _busy ? null : _resend,
-                            child: const Text('Mail nochmal senden'),
-                          ),
-                          TextButton(
-                            onPressed: _busy ? null : _reset,
-                            child: const Text('Passwort vergessen'),
-                          ),
-                        ],
-                      ),
                   ],
                 ),
               ),
@@ -279,8 +234,7 @@ class _AuthPageState extends State<AuthPage> {
         AuthProblem.invalidCredentials =>
           'E-Mail oder Passwort stimmt nicht.',
         AuthProblem.emailNotConfirmed =>
-          'Die Adresse ist noch nicht bestätigt. Schau in dein Postfach – '
-              'oder lass dir die Mail nochmal schicken.',
+          'Die Adresse ist noch nicht bestätigt.',
         AuthProblem.emailTaken =>
           'Mit dieser Adresse gibt es schon ein Konto. Melde dich an.',
         AuthProblem.weakPassword => 'Das Passwort ist zu kurz.',
