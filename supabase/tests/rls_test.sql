@@ -17,6 +17,13 @@ select plan(18);
 --  Testdaten
 -- ---------------------------------------------------------------
 
+-- kick_push_dispatcher() (notifications.sql) braucht diese beiden
+-- Vault-Einträge, sonst schlägt schon der NOT-NULL der url fehl, bevor
+-- ein einziger Test läuft. Werte sind Fantasie – die Transaktion wird nie
+-- committet, es wird also nie wirklich etwas zugestellt.
+select vault.create_secret('http://localhost/fake-push-endpoint', 'push_function_url');
+select vault.create_secret('test-service-role-key', 'service_role_key');
+
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'anna@example.test'),
   ('22222222-2222-2222-2222-222222222222', 'bert@example.test'),
