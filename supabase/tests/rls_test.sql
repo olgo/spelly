@@ -22,10 +22,15 @@ insert into auth.users (id, email) values
   ('22222222-2222-2222-2222-222222222222', 'bert@example.test'),
   ('33333333-3333-3333-3333-333333333333', 'clara@example.test');
 
+-- handle_new_user() (auth_profiles.sql) legt beim Insert in auth.users
+-- bereits eine profiles-Zeile an, mit einem aus der E-Mail abgeleiteten
+-- Namen. Hier nur noch auf die lesbaren Namen umbenennen, statt ein
+-- zweites Mal einzufügen.
 insert into profiles (id, display_name) values
   ('11111111-1111-1111-1111-111111111111', 'Anna'),
   ('22222222-2222-2222-2222-222222222222', 'Bert'),
-  ('33333333-3333-3333-3333-333333333333', 'Clara');
+  ('33333333-3333-3333-3333-333333333333', 'Clara')
+on conflict (id) do update set display_name = excluded.display_name;
 
 insert into games (id, status, board, current_seat, tiles_left, dict_version)
 values (
