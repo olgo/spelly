@@ -28,11 +28,11 @@ lässt sich alles unter Linux oder Windows.
       im OneSignal-Dashboard hinterlegt, taucht sonst nirgends im Code auf
 - [ ] **Mailversand**: Resend, Postmark oder Mailgun. Kostenloses Kontingent
       reicht; du brauchst SMTP-Host, Port, Benutzer, Passwort
-      > **Abweichung (2026-08-02):** Resend-Account existiert, aber ohne
-      > eigene Domain lässt sich damit nicht an die Freundesrunde
-      > verschicken. Für den Start stattdessen `Confirm email` ausgeschaltet
-      > (siehe Abschnitt 4) – Mailversand bleibt offen, falls später doch
-      > eine Domain dazukommt.
+      > **Update (2026-08-02):** Resend-Account vorhanden, eigene Domain ist
+      > jetzt auch da – Domain bei Resend verifizieren (DNS-Einträge:
+      > SPF/DKIM) und SMTP-Zugangsdaten in Abschnitt 4 eintragen. Der
+      > kurzzeitige Zwischenstand ohne Mailversand (`Confirm email` aus,
+      > kein E-Mail-Feld beim Anlegen) ist zurückgebaut.
 - [x] **Webspeicher mit HTTPS** für die Web-App und die APK-Datei.
       Cloudflare Pages, Netlify oder Vercel, alle kostenlos.
       Ohne HTTPS gibt es kein Push
@@ -94,14 +94,14 @@ lässt sich alles unter Linux oder Windows.
 - [ ] *Authentication → Emails → SMTP Settings*: Zugangsdaten deines
       Mailversands eintragen. Der eingebaute Versand ist so stark gedrosselt,
       dass eure erste Registrierungsrunde hängenbleibt
-      > Übersprungen, siehe Abweichung bei „Mailversand" in Abschnitt 1.
-- [x] *Authentication → Sign In / Providers → Email*: `Confirm email`
-      **bewusst ausgeschaltet** (Abweichung von der ursprünglichen Empfehlung
-      „eingeschaltet lassen") – ohne Mailversand käme sonst niemand über die
-      Bestätigungsmail hinaus ins Konto. Passwort-Zurücksetzen läuft bis auf
-      Weiteres nur manuell über dich im Dashboard. Code in `auth_page.dart`
-      ist entsprechend angepasst (kein Bestätigungshinweis, keine toten
-      Mail-Buttons mehr)
+      > Siehe Update bei „Mailversand" in Abschnitt 1 – jetzt mit eigener
+      > Domain nachzuholen.
+- [ ] *Authentication → Sign In / Providers → Email*: `Confirm email`
+      **wieder einschalten**. War kurzzeitig ausgeschaltet, weil noch keine
+      eigene Domain für den Mailversand da war – das ist jetzt erledigt,
+      Code in `auth_page.dart` ist wieder auf echten Mailversand
+      zurückgebaut (E-Mail-Feld, Bestätigungshinweis, „Mail nochmal senden",
+      „Passwort vergessen")
 - [ ] *Authentication → URL Configuration*:
       - Site URL: `https://spelly.example.org`
       - Redirect URLs: `https://spelly.example.org/**` und
@@ -221,7 +221,7 @@ blockiert den ersten Versand nicht:
 
 | Lücke | Auswirkung |
 |---|---|
-| Passwort-Zurücksetzen | Ohne Mailversand (siehe Abschnitt 1/4) gibt es aktuell keinen Selbstbedienungsweg. Bis dahin setzt du Passwörter im Dashboard zurück |
+| Passwort-Zurücksetzen | Die Mail geht raus, aber es fehlt der Bildschirm zum Eingeben des neuen Passworts. Bis dahin setzt du Passwörter im Dashboard zurück |
 | Versionsprüfung im Client | `app_release` ist angelegt und wird gelesen, aber noch nicht angezeigt. Bis dahin sagst du selbst Bescheid, wenn ein neues APK da ist |
 | Bildschirm zum Partieende | Die Schlussabrechnung läuft serverseitig korrekt, es fehlt die Anzeige. Momentan steht nur „Beendet" mit dem Endstand |
 | Steine tauschen | Server und Repository können es, es gibt keinen Knopf |
