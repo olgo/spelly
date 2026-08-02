@@ -129,6 +129,7 @@ class GameController extends ChangeNotifier {
     try {
       await _repo.submitMove(gameId: _gameId, placements: _pending);
       _pending.clear();
+      _recompute();
       _snapshot = await _repo.loadGame(_gameId);
       return true;
     } on MoveRejected catch (e) {
@@ -138,6 +139,7 @@ class GameController extends ChangeNotifier {
       _lastError = e.code;
       if (e.code == 'stale_turn') {
         _pending.clear();
+        _recompute();
         _snapshot = await _repo.loadGame(_gameId);
       }
       return false;
