@@ -77,15 +77,24 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
       setState(() => _message = '${player.displayName} ist herausgefordert.');
     } on ChallengeFailed catch (e) {
       setState(() => _message = e.message);
+    } catch (_) {
+      setState(() => _message = 'Das hat nicht geklappt. Versuch es nochmal.');
     }
     await _refresh();
   }
 
   Future<void> _respond(GameEntry game, {required bool accept}) async {
-    final status = await widget.lobby.respond(game.id, accept: accept);
+    try {
+      final status = await widget.lobby.respond(game.id, accept: accept);
+      if (!mounted) return;
+      if (accept && status == 'active') {
+        _openGame(game.id);
+        return;
+      }
+    } catch (_) {
+      setState(() => _message = 'Das hat nicht geklappt. Versuch es nochmal.');
+    }
     await _refresh();
-    if (!mounted) return;
-    if (accept && status == 'active') _openGame(game.id);
   }
 
   @override
