@@ -41,6 +41,19 @@ class _GamePageState extends State<GamePage> {
         final snapshot = _controller.snapshot;
 
         return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Palette.graphite,
+            elevation: 0,
+            leadingWidth: 180,
+            leading: TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back, size: 18, color: Palette.text),
+              label: const Text(
+                'Zurück zur Lobby',
+                style: TextStyle(color: Palette.text),
+              ),
+            ),
+          ),
           body: SafeArea(
             child: snapshot == null
                 ? const Center(child: CircularProgressIndicator())
