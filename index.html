@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <base href="/spelly/">
+
+  <meta charset="UTF-8">
+  <meta name="description" content="Spelly – Wortlegespiel für Freundeskreise">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- Diese beiden Zeilen sind der Grund, warum die Web-App auf dem
+       iPhone ohne Browserleiste startet. Ohne sie sieht sie nach dem
+       Ablegen auf dem Home-Bildschirm immer noch aus wie eine Webseite. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Der Name unter dem Symbol auf dem Home-Bildschirm. -->
+  <meta name="apple-mobile-web-app-title" content="Spelly">
+
+  <title>Spelly</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#16232C">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- OneSignal Web SDK für Browser-Push (Web/iOS-PWA). -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.init({
+        appId: 'cec97100-f4a4-4d06-929b-80a2226fd8e4',
+      });
+    });
+  </script>
+
+  <style>
+    /* Verhindert das weisse Aufblitzen, bevor Flutter geladen hat – beim
+       ersten Start wird die Wortliste mitgeladen, das dauert einen Moment. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #16232C;
+      overscroll-behavior: none;
+    }
+    #ladehinweis {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8FA3AF;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="ladehinweis">Spelly wird geladen</div>
+
+  <script>
+    // Sobald Flutter zeichnet, ist der Hinweis überflüssig.
+    window.addEventListener('flutter-first-frame', function () {
+      const hint = document.getElementById('ladehinweis');
+      if (hint) hint.remove();
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
