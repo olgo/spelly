@@ -26,3 +26,19 @@ String moveMessage(String code, [Object? detail]) => switch (code) {
       'pass_failed' => 'Passen hat nicht geklappt. Versuch es nochmal.',
       _ => 'Der Zug ging nicht durch ($code).',
     };
+
+/// Nicht jeder Grund gehört aufs Brett. Beim Legen ist „noch keine Zeile" der
+/// Normalzustand, und wer mitten im Wort steht, weiss das selbst. Gezeigt wird
+/// nur, was man an den Steinen nicht ablesen kann.
+///
+/// Erlaubnisliste, kein Verbot: ein neuer Code schweigt, bis jemand
+/// ausdrücklich entscheidet, dass er die Unterbrechung wert ist. Für den
+/// Bericht nach einem abgelehnten Zug gilt das nicht – dort steht weiterhin
+/// jeder Code, siehe [moveMessage].
+const _spokenWhilePlacing = {
+  'invalid_word', // sieht man dem Brett nicht an
+  'first_move_must_cover_center', // die eine Regel, die man beim Eröffnen vergisst
+  'dict_loading', // erklärt, warum noch keine Zahl dasteht
+};
+
+bool showsWhilePlacing(String code) => _spokenWhilePlacing.contains(code);

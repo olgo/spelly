@@ -97,6 +97,25 @@ class GameController extends ChangeNotifier {
     _recompute();
   }
 
+  /// Einen schon gelegten Stein auf ein anderes Feld schieben. Ein Schritt,
+  /// nicht Aufnehmen-und-Legen: sonst rechnet die Vorschau zweimal, und zieht
+  /// der Gegner zufällig dazwischen, steigt [place] aus – der Stein wäre dann
+  /// vom alten Feld verschwunden, ohne je auf dem neuen anzukommen.
+  void move(int from, Placement to) {
+    if (!isMyTurn) return;
+    if (from == to.index) return;
+    if (_snapshot!.board[to.index] != null) return;
+
+    final at = _pending.indexWhere((p) => p.index == from);
+    if (at < 0) return;
+
+    _pending.removeAt(at);
+    _pending.removeWhere((p) => p.index == to.index);
+    // Zuletzt angehängt: die Vorschau hängt sich an den zuletzt bewegten Stein.
+    _pending.add(to);
+    _recompute();
+  }
+
   void clearPending() {
     _pending.clear();
     _recompute();

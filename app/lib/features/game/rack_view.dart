@@ -14,29 +14,41 @@ class RackView extends StatelessWidget {
   Widget build(BuildContext context) {
     final tiles = controller.availableRack;
 
-    return Container(
-      height: 68,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Palette.boardInk,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Palette.hairline),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (var i = 0; i < tiles.length; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: _DraggableTile(
-                letter: tiles[i],
-                enabled: controller.isMyTurn,
-                onBlankChosen: (letter) => _showBlankPicker(context, letter),
+    // Das Rack nimmt Steine vom Brett zurück. Ein Rack-Stein, der wieder hier
+    // landet, wird abgelehnt – dann ist schlicht nichts passiert. Weil
+    // abgelehnte Steine gar nicht erst in `candidate` auftauchen, leuchtet der
+    // Rahmen von selbst nur, wenn das Ablegen auch etwas bewirkt.
+    return DragTarget<DragTile>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.fromIndex != null && controller.isMyTurn,
+      onAcceptWithDetails: (details) =>
+          controller.pickUp(details.data.fromIndex!),
+      builder: (context, candidate, _) => Container(
+        height: 68,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Palette.boardInk,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: candidate.isEmpty ? Palette.hairline : Palette.signal,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < tiles.length; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: _DraggableTile(
+                  letter: tiles[i],
+                  enabled: controller.isMyTurn,
+                  onBlankChosen: (letter) => _showBlankPicker(context, letter),
+                ),
               ),
-            ),
-          if (tiles.isEmpty)
-            Text('Rack leer', style: Theme.of(context).textTheme.labelSmall),
-        ],
+            if (tiles.isEmpty)
+              Text('Rack leer', style: Theme.of(context).textTheme.labelSmall),
+          ],
+        ),
       ),
     );
   }
@@ -114,6 +126,17 @@ class _DraggableTileState extends State<_DraggableTile> {
   /// ist – sonst wüsste die Vorschau nicht, welches Wort sie prüfen soll.
   String? _chosen;
 
+  /// Die Steine in der Reihe tragen keine Keys, ihr Zustand hängt also an der
+  /// Position. Solange das Rack nur schrumpfte, fiel das nicht auf; seit
+  /// Steine auch vom Brett zurückkommen, wechselt die Belegung in beide
+  /// Richtungen. Ohne das hier könnte ein später nachrückender Blanko die alte
+  /// Wahl erben und sich legen lassen, ohne je gefragt zu haben.
+  @override
+  void didUpdateWidget(covariant _DraggableTile old) {
+    super.didUpdateWidget(old);
+    if (old.letter != widget.letter) _chosen = null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isBlank = widget.letter == '?';
@@ -132,8 +155,9 @@ class _DraggableTileState extends State<_DraggableTile> {
       );
     }
 
-    return Draggable<RackTile>(
-      data: RackTile(shown, isBlank: isBlank),
+    return Draggable<DragTile>(
+      // Kein fromIndex: Dieser Stein kommt vom Rack, nicht vom Brett.
+      data: DragTile(shown, isBlank: isBlank),
       feedback: _Face(letter: shown, blank: isBlank, elevated: true),
       childWhenDragging: Opacity(opacity: 0.25, child: face),
       // Nochmal antippen erlaubt, den Blanko-Buchstaben zu ändern, solange
