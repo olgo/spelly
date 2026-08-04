@@ -74,11 +74,13 @@ Color premiumColour(String code) => switch (code) {
     };
 
 /// Kurzschrift auf leeren Prämienfeldern. Deutsch abgekürzt, damit niemand
-/// erst eine Legende suchen muss.
+/// erst eine Legende suchen muss. Ohne Mal-Zeichen: zwei Zeichen statt drei
+/// lassen jedem Zeichen die Hälfte mehr Platz – auf einem Feld von zwanzig
+/// Pixeln ist das der Unterschied zwischen lesbar und geraten.
 String premiumLabel(String code) => switch (code) {
-      'd' => '2×B',
-      't' => '3×B',
-      'D' => '2×W',
-      'T' => '3×W',
+      'd' => '2B',
+      't' => '3B',
+      'D' => '2W',
+      'T' => '3W',
       _ => '',
     };

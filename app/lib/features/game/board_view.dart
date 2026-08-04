@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/messages.dart';
@@ -8,9 +10,13 @@ import 'game_controller.dart';
 
 /// Das Brett mit dem Kernstück der Oberfläche: der Zugwert klebt am zuletzt
 /// gelegten Stein und aktualisiert sich beim Ablegen, nicht erst beim
-/// Abschicken. Ist der Zug noch nicht gültig, steht an derselben Stelle der
-/// Grund – dieselbe Position, dieselbe Form, andere Farbe. Man muss den Blick
-/// nicht vom Brett nehmen, um zu wissen, woran man ist.
+/// Abschicken. Man muss den Blick nicht vom Brett nehmen, um zu wissen, woran
+/// man ist.
+///
+/// An derselben Stelle steht in Warnfarbe der Grund, wenn der Zug nicht
+/// durchgeht – aber nur für die Gründe, die man den Steinen nicht ansieht
+/// (siehe `showsWhilePlacing`). Dass vier Steine über Kreuz keine Reihe
+/// ergeben, ist beim Legen der Normalzustand und keine Meldung wert.
 class BoardView extends StatelessWidget {
   const BoardView({super.key, required this.controller});
 
@@ -24,6 +30,12 @@ class BoardView extends StatelessWidget {
         final cell = (side - Metrics.boardPadding * 2) / kSize;
         final board = controller.displayBoard;
         final pending = controller.pendingIndices;
+
+        // Beim Legen sind die meisten Regelverstösse Zwischenstände. Der
+        // Zettel erscheint nur für das, was man den Steinen nicht ansieht.
+        final preview = controller.preview;
+        final showPreview = preview != null &&
+            (preview.isValid || showsWhilePlacing(preview.error!));
 
         return SizedBox(
           width: side,
@@ -50,7 +62,7 @@ class BoardView extends StatelessWidget {
                       controller: controller,
                     ),
                   ),
-                if (controller.preview != null)
+                if (showPreview)
                   _PreviewChip(controller: controller, cell: cell),
               ],
             ),
@@ -78,15 +90,28 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DragTarget<RackTile>(
-      onWillAcceptWithDetails: (_) => tile == null && controller.isMyTurn,
+    return DragTarget<DragTile>(
+      onWillAcceptWithDetails: (details) {
+        if (!controller.isMyTurn) return false;
+        // Das Ursprungsfeld zählt als frei: Wer es sich anders überlegt und
+        // den Stein zurücklegt, soll nicht ins Leere greifen.
+        if (details.data.fromIndex == index) return true;
+        return tile == null;
+      },
       onAcceptWithDetails: (details) {
-        controller.place(Placement(
+        final data = details.data;
+        final to = Placement(
           index ~/ kSize,
           index % kSize,
-          details.data.letter,
-          blank: details.data.isBlank,
-        ));
+          data.letter,
+          blank: data.isBlank,
+        );
+        final from = data.fromIndex;
+        if (from == null) {
+          controller.place(to);
+        } else {
+          controller.move(from, to);
+        }
       },
       builder: (context, candidate, _) {
         final hovering = candidate.isNotEmpty;
@@ -96,14 +121,38 @@ class _Cell extends StatelessWidget {
         }
 
         final face = _TileFace(tile: tile!, size: size, isPending: isPending);
+        if (!isPending) return face;
 
-        // Nur eigene, noch nicht abgeschickte Steine lassen sich zurücknehmen.
-        return isPending
-            ? GestureDetector(
-                onTap: () => controller.pickUp(index),
-                child: face,
-              )
-            : face;
+        // Nur eigene, noch nicht abgeschickte Steine lassen sich bewegen – und
+        // zwar auf demselben Weg, auf dem sie gekommen sind. Tippen bleibt die
+        // Abkürzung zurück aufs Rack.
+        //
+        // Unter dem Daumen ist ein Stein von zwanzig Pixeln unsichtbar. Der
+        // gezogene Stein wächst deshalb auf Rack-Grösse und schwebt über dem
+        // Finger; gezielt wird mit dem hervorgehobenen Feld, nicht mit ihm.
+        final lifted = math.max(size * 1.6, 44.0);
+
+        return Draggable<DragTile>(
+          data: DragTile(tile!.letter, isBlank: tile!.blank, fromIndex: index),
+          dragAnchorStrategy: (_, __, ___) => Offset(lifted / 2, lifted + 8),
+          feedback: Material(
+            type: MaterialType.transparency,
+            child: SizedBox(
+              width: lifted,
+              height: lifted,
+              child: _TileFace(tile: tile!, size: lifted, isPending: true),
+            ),
+          ),
+          // Das Loch ist beim Ziehen die nützlichere Auskunft als ein blasser
+          // Stein: Man hebt den Stein ja gerade hoch, um zu sehen, welche
+          // Prämienfelder noch frei sind.
+          childWhenDragging:
+              _EmptySquare(index: index, size: size, hovering: hovering),
+          child: GestureDetector(
+            onTap: () => controller.pickUp(index),
+            child: face,
+          ),
+        );
       },
     );
   }
@@ -142,15 +191,20 @@ class _EmptySquare extends StatelessWidget {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Padding(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(1),
                     child: Text(
                       label,
+                      // Auf dem Telefon ist ein Feld gut zwanzig Pixel breit.
+                      // Die Deckkraft trägt hier mehr als die Grösse: Sie
+                      // kauft Lesbarkeit, ohne dem Feld Gewicht zu geben, das
+                      // den Steinen zusteht. Laufweite bleibt bewusst offen –
+                      // kleine Schrift braucht mehr davon, nicht weniger.
                       style: TextStyle(
-                        fontSize: size * 0.26,
+                        fontSize: size * 0.40,
                         height: 1,
                         letterSpacing: 0.2,
-                        fontWeight: FontWeight.w600,
-                        color: Palette.text.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w700,
+                        color: Palette.text.withValues(alpha: 0.85),
                       ),
                     ),
                   ),
@@ -320,9 +374,12 @@ class _ValidPreview extends StatelessWidget {
   }
 }
 
-/// Ein Stein, der vom Rack aus gezogen wird.
-class RackTile {
-  const RackTile(this.letter, {this.isBlank = false});
+/// Ein Stein unterwegs. [fromIndex] sagt, woher er kommt: null heisst Rack,
+/// sonst das Brettfeld, das er beim Ablegen wieder freigibt. Ohne diese Angabe
+/// wüsste das Zielfeld nicht, ob es einen Stein aufnimmt oder einen umsetzt.
+class DragTile {
+  const DragTile(this.letter, {this.isBlank = false, this.fromIndex});
   final String letter;
   final bool isBlank;
+  final int? fromIndex;
 }
