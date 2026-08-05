@@ -89,13 +89,23 @@ class GameController extends ChangeNotifier {
     if (_snapshot!.board[placement.index] != null) return;
     _pending.removeWhere((p) => p.index == placement.index);
     _pending.add(placement);
+    _clearLastError();
     _recompute();
   }
 
   void pickUp(int index) {
     _pending.removeWhere((p) => p.index == index);
+    _clearLastError();
     _recompute();
   }
+
+  /// Wer die Steine umbaut, hat den abgelehnten Zug hinter sich gelassen – die
+  /// Meldung dazu darf nicht stehen bleiben, während schon ein neuer entsteht.
+  ///
+  /// Bewusst hier und nicht in [_recompute]: [submit] setzt den Fehler und
+  /// räumt auf dem stale_turn-Pfad danach die Steine ab, würde ihn also über
+  /// [_recompute] sofort wieder löschen.
+  void _clearLastError() => _lastError = null;
 
   /// Einen schon gelegten Stein auf ein anderes Feld schieben. Ein Schritt,
   /// nicht Aufnehmen-und-Legen: sonst rechnet die Vorschau zweimal, und zieht
@@ -111,13 +121,14 @@ class GameController extends ChangeNotifier {
 
     _pending.removeAt(at);
     _pending.removeWhere((p) => p.index == to.index);
-    // Zuletzt angehängt: die Vorschau hängt sich an den zuletzt bewegten Stein.
     _pending.add(to);
+    _clearLastError();
     _recompute();
   }
 
   void clearPending() {
     _pending.clear();
+    _clearLastError();
     _recompute();
   }
 
