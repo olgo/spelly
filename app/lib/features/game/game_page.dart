@@ -40,20 +40,12 @@ class _GamePageState extends State<GamePage> {
       builder: (context, _) {
         final snapshot = _controller.snapshot;
 
+        // Keine AppBar: Ihre 56 Punkt sind auf einem Telefon der grösste
+        // Einzelposten, der dem Brett fehlt – im Browserfenster, wo Safari
+        // sich oben und unten schon gut hundert Punkt nimmt, entscheidet das
+        // darüber, ob das Brett die volle Breite bekommt. Der Weg zurück
+        // steckt jetzt als Pfeil in der Punktzeile.
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Palette.graphite,
-            elevation: 0,
-            leadingWidth: 180,
-            leading: TextButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back, size: 18, color: Palette.text),
-              label: const Text(
-                'Zurück zur Lobby',
-                style: TextStyle(color: Palette.text),
-              ),
-            ),
-          ),
           body: SafeArea(
             child: snapshot == null
                 ? const Center(child: CircularProgressIndicator())
@@ -63,7 +55,7 @@ class _GamePageState extends State<GamePage> {
                       Expanded(
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(4),
                             child: BoardView(controller: _controller),
                           ),
                         ),
@@ -96,9 +88,22 @@ class _ScoreBar extends StatelessWidget {
             : '${s.opponentName} ist am Zug';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+      padding: const EdgeInsets.fromLTRB(4, 6, 14, 4),
       child: Row(
         children: [
+          // Der Weg zurück in die Lobby. Fest auf 40 Punkt begrenzt – ein
+          // IconButton bringt sonst 48 mit und macht die Zeile höher, als
+          // die Punktestände sie ohnehin schon machen.
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back),
+            iconSize: 22,
+            color: Palette.textDim,
+            tooltip: 'Zurück zur Lobby',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          ),
+          const SizedBox(width: 6),
           _Score(label: 'Du', value: s.myScore, active: controller.isMyTurn),
           const SizedBox(width: 18),
           _Score(
@@ -149,7 +154,7 @@ class _Score extends StatelessWidget {
           '$value',
           style: TextStyle(
             color: active ? Palette.text : Palette.textDim,
-            fontSize: 24,
+            fontSize: 21,
             height: 1.1,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -170,17 +175,9 @@ class _Actions extends StatelessWidget {
     final canSubmit = preview?.isValid == true && !controller.submitting;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
       child: Column(
         children: [
-          if (controller.lastError != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                moveMessage(controller.lastError!),
-                style: const TextStyle(color: Palette.warn, fontSize: 12.5),
-              ),
-            ),
           Row(
             children: [
               TextButton(
@@ -211,8 +208,54 @@ class _Actions extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          _StatusLine(controller: controller),
         ],
       ),
+    );
+  }
+}
+
+/// Der einzige Ort, an dem das Spiel sagt, was gerade nicht geht. Feste Höhe,
+/// damit das Auftauchen einer Meldung nicht das ganze Brett verschiebt – und
+/// unter den Knöpfen statt auf dem Brett, wo der Kasten früher Steine verdeckt
+/// hat.
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.controller});
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = controller.preview;
+
+    String? text;
+    Color colour = Palette.warn;
+
+    if (controller.lastError != null) {
+      text = moveMessage(controller.lastError!);
+    } else if (preview != null &&
+        !preview.isValid &&
+        showsWhilePlacing(preview.error!)) {
+      text = moveMessage(preview.error!, preview.detail);
+    } else if (preview != null && preview.isValid && preview.words.length > 1) {
+      // Bei einem einzigen Wort steht die Zahl schon auf dem Knopf. Erst wenn
+      // mehrere Wörter zusammenkommen, ist die Aufstellung eine eigene
+      // Auskunft: dann sieht man, woher die Punkte stammen.
+      text = preview.words.map((w) => '${w.word} ${w.score}').join(' · ');
+      colour = Palette.signal;
+    }
+
+    return SizedBox(
+      height: 18,
+      width: double.infinity,
+      child: text == null
+          ? null
+          : Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.fade,
+              style: TextStyle(color: colour, fontSize: 12, height: 1.2),
+            ),
     );
   }
 }

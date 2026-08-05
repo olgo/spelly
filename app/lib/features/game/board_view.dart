@@ -2,21 +2,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/messages.dart';
 import '../../core/theme.dart';
 import '../../domain/rules.dart';
 import '../../domain/tiles.dart';
 import 'game_controller.dart';
 
-/// Das Brett mit dem Kernstück der Oberfläche: der Zugwert klebt am zuletzt
-/// gelegten Stein und aktualisiert sich beim Ablegen, nicht erst beim
-/// Abschicken. Man muss den Blick nicht vom Brett nehmen, um zu wissen, woran
-/// man ist.
+/// Das Brett, und sonst nichts: 225 Felder, die Steine darauf, und die Gesten,
+/// mit denen man sie bewegt.
 ///
-/// An derselben Stelle steht in Warnfarbe der Grund, wenn der Zug nicht
-/// durchgeht – aber nur für die Gründe, die man den Steinen nicht ansieht
-/// (siehe `showsWhilePlacing`). Dass vier Steine über Kreuz keine Reihe
-/// ergeben, ist beim Legen der Normalzustand und keine Meldung wert.
+/// Der Zugwert und der Grund, warum ein Zug nicht durchgeht, standen früher
+/// als Zettel mitten auf dem Brett. Sie stehen jetzt unter den Knöpfen
+/// (`_StatusLine` in `game_page.dart`) – dort verdecken sie keine Steine, und
+/// das Brett muss sich nicht mehr merken, an welchem Stein der Zettel klebt.
 class BoardView extends StatelessWidget {
   const BoardView({super.key, required this.controller});
 
@@ -30,12 +27,6 @@ class BoardView extends StatelessWidget {
         final cell = (side - Metrics.boardPadding * 2) / kSize;
         final board = controller.displayBoard;
         final pending = controller.pendingIndices;
-
-        // Beim Legen sind die meisten Regelverstösse Zwischenstände. Der
-        // Zettel erscheint nur für das, was man den Steinen nicht ansieht.
-        final preview = controller.preview;
-        final showPreview = preview != null &&
-            (preview.isValid || showsWhilePlacing(preview.error!));
 
         return SizedBox(
           width: side,
@@ -62,8 +53,6 @@ class BoardView extends StatelessWidget {
                       controller: controller,
                     ),
                   ),
-                if (showPreview)
-                  _PreviewChip(controller: controller, cell: cell),
               ],
             ),
           ),
@@ -278,98 +267,6 @@ class _TileFace extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Die Vorschau selbst. Sie sitzt über dem zuletzt gelegten Stein und rückt
-/// mit, statt in einer Statusleiste am Rand zu stehen.
-class _PreviewChip extends StatelessWidget {
-  const _PreviewChip({required this.controller, required this.cell});
-
-  final GameController controller;
-  final double cell;
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = controller.preview!;
-    final anchor = controller.pending.last;
-    final valid = preview.isValid;
-
-    // Über dem Stein, ausser er liegt in der obersten Zeile – dann darunter.
-    final above = anchor.row > 0;
-    final top = Metrics.boardPadding +
-        (above ? (anchor.row - 1) * cell : (anchor.row + 1) * cell);
-    final left = (anchor.col * cell + Metrics.boardPadding - cell * 1.5)
-        .clamp(4.0, double.infinity);
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: IgnorePointer(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 140),
-          child: Container(
-            key: ValueKey('${preview.score}-${preview.error}'),
-            constraints: BoxConstraints(maxWidth: cell * 8),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: valid ? Palette.signal : Palette.warn,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: valid
-                ? _ValidPreview(preview: preview)
-                : Text(
-                    moveMessage(preview.error!, preview.detail),
-                    style: const TextStyle(
-                      color: Palette.bone,
-                      fontSize: 11.5,
-                      height: 1.15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ValidPreview extends StatelessWidget {
-  const _ValidPreview({required this.preview});
-  final MovePreview preview;
-
-  @override
-  Widget build(BuildContext context) {
-    // Bei mehreren Wörtern zählt die Summe; die Einzelwerte stehen klein
-    // darunter, damit nachvollziehbar bleibt, woher die Punkte kommen.
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '+${preview.score}',
-          style: const TextStyle(
-            color: Palette.boneInk,
-            fontSize: 15,
-            height: 1,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-          ),
-        ),
-        if (preview.words.length > 1) ...[
-          const SizedBox(height: 2),
-          Text(
-            preview.words.map((w) => '${w.word} ${w.score}').join(' · '),
-            style: TextStyle(
-              color: Palette.boneInk.withValues(alpha: 0.72),
-              fontSize: 10,
-              height: 1.1,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
