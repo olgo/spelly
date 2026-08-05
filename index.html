@@ -6,14 +6,22 @@
   <meta charset="UTF-8">
   <meta name="description" content="Spelly – Wortlegespiel für Freundeskreise">
   <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <!-- Diese beiden Zeilen sind der Grund, warum die Web-App auf dem
        iPhone ohne Browserleiste startet. Ohne sie sieht sie nach dem
        Ablegen auf dem Home-Bildschirm immer noch aus wie eine Webseite. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- "black" statt "black-translucent", und kein viewport-fit=cover: Damit
+       legt iOS die Statusleiste nicht über den Inhalt, sondern beginnt die
+       Seite darunter. Das muss hier geregelt werden, weil Flutter Web die
+       Geräteränder gar nicht kennt – die Engine baut ihre Ansicht mit fest
+       genullten Rändern, SafeArea läuft dort also ins Leere. Ein fester Wert
+       im Dart-Code wäre auch falsch: 20 Punkt beim SE, 47 mit Notch.
+       Nebeneffekt: Unten bleibt der Bereich der Home-Leiste frei. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <!-- Der Name unter dem Symbol auf dem Home-Bildschirm. -->
   <meta name="apple-mobile-web-app-title" content="Spelly">
@@ -31,6 +39,18 @@
     OneSignalDeferred.push(async function (OneSignal) {
       await OneSignal.init({
         appId: 'cec97100-f4a4-4d06-929b-80a2226fd8e4',
+        // Ohne diese Angabe zeigt OneSignal seine eigene Einladung mit
+        // Marketing-Wortlaut ("die neuesten Nachrichten und Angebote"), die
+        // wie ein Newsletter aussieht und mit dem Spiel nichts zu tun hat.
+        // Gefragt wird stattdessen nach der Anmeldung aus push.dart heraus –
+        // dann kommt der schlichte Systemdialog, und es ist klar, worum es
+        // geht. Im Dashboard ist dieselbe Aufforderung ebenfalls abgestellt;
+        // das hier hält sie fern, falls sie dort je wieder angeklickt wird.
+        promptOptions: {
+          slidedown: {
+            prompts: [{type: 'push', autoPrompt: false}],
+          },
+        },
       });
     });
   </script>
