@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/onesignal_bridge.dart';
 import 'core/push.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
@@ -21,7 +21,9 @@ const oneSignalAppId = 'cec97100-f4a4-4d06-929b-80a2226fd8e4';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  OneSignal.initialize(oneSignalAppId);
+  // Im Web ein Leerlauf: Dort richtet `web/index.html` das JS-SDK ein, noch
+  // bevor Flutter startet.
+  OneSignalApi.initialize(oneSignalAppId);
 
   await Supabase.initialize(
     url: supabaseUrl,
@@ -90,7 +92,9 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _setUpPush() async {
-    await _push.register();
+    // Nur verknüpfen, nicht fragen: Nach der Erlaubnis fragt der Knopf in der
+    // Lobby, damit der Systemdialog aus einer frischen Nutzergeste kommt.
+    await _push.link();
     _push.openedGames.listen((gameId) {
       if (mounted) setState(() => _pendingGameId = gameId);
     });
@@ -105,6 +109,7 @@ class _AuthGateState extends State<AuthGate> {
       auth: _auth,
       lobby: _lobby,
       games: _games,
+      push: _push,
       openGameId: _pendingGameId,
     );
   }

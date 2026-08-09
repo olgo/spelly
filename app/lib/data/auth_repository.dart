@@ -1,5 +1,6 @@
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../core/onesignal_bridge.dart';
 
 /// Grund, warum eine Anmeldung nicht geklappt hat – in Codes, damit die
 /// Oberfläche die Texte bestimmt.
@@ -90,7 +91,7 @@ class AuthRepository {
     // mehr benutzt. Best effort: darf das eigentliche Abmelden nicht
     // blockieren, falls OneSignal (noch) nicht erreichbar ist.
     try {
-      await OneSignal.logout().timeout(const Duration(seconds: 3));
+      await OneSignalApi.logout().timeout(const Duration(seconds: 3));
     } catch (_) {}
     await _client.auth.signOut();
   }
