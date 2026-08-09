@@ -37,8 +37,16 @@
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function (OneSignal) {
+      // Die App liegt auf GitHub Pages unter /spelly/, beim lokalen
+      // `flutter run` dagegen unter /. OneSignal sucht seinen Service Worker
+      // sonst im Wurzelverzeichnis, wo nichts liegt. Der Pfad kommt deshalb
+      // aus dem <base>-Tag oben statt fest im Text zu stehen – ein fester
+      // Wert würde eine der beiden Seiten kaputtmachen.
+      const basis = new URL(document.baseURI).pathname;
       await OneSignal.init({
         appId: 'cec97100-f4a4-4d06-929b-80a2226fd8e4',
+        serviceWorkerPath: (basis + 'OneSignalSDKWorker.js').replace(/^\//, ''),
+        serviceWorkerParam: {scope: basis},
         // Ohne diese Angabe zeigt OneSignal seine eigene Einladung mit
         // Marketing-Wortlaut ("die neuesten Nachrichten und Angebote"), die
         // wie ein Newsletter aussieht und mit dem Spiel nichts zu tun hat.
