@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/push.dart';
 import '../../core/theme.dart';
 import '../../data/auth_repository.dart';
 import '../../data/game_repository.dart';
@@ -12,12 +13,14 @@ class LobbyPage extends StatefulWidget {
     required this.auth,
     required this.lobby,
     required this.games,
+    required this.push,
     this.openGameId,
   });
 
   final AuthRepository auth;
   final LobbyRepository lobby;
   final GameRepository games;
+  final PushService push;
 
   /// Kommt aus einer angetippten Benachrichtigung.
   final String? openGameId;
@@ -33,6 +36,12 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
   List<PlayerEntry> _players = const [];
   bool _loading = true;
   String? _message;
+
+  /// Weggetippt für diese Sitzung. Wer keine Meldungen will, soll nicht bei
+  /// jedem Start denselben Streifen wegsehen müssen.
+  bool _pushHintHidden = false;
+  bool _pushAsking = false;
+  bool _pushDeclined = false;
 
   @override
   void initState() {
@@ -97,6 +106,16 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
     await _refresh();
   }
 
+  Future<void> _enablePush() async {
+    setState(() => _pushAsking = true);
+    final granted = await widget.push.enable();
+    if (!mounted) return;
+    setState(() {
+      _pushAsking = false;
+      _pushDeclined = !granted;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +142,14 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
       ),
       body: Column(
         children: [
+          if (!_pushHintHidden && !widget.push.hasPermission)
+            _PushHint(
+              supported: widget.push.isSupported,
+              asking: _pushAsking,
+              declined: _pushDeclined,
+              onEnable: _enablePush,
+              onDismiss: () => setState(() => _pushHintHidden = true),
+            ),
           if (_message != null)
             Container(
               width: double.infinity,
@@ -152,6 +179,73 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
                       ),
                     ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Der einzige Ort, an dem nach der Push-Erlaubnis gefragt wird.
+///
+/// Ein Knopf und kein Dialog gleich nach dem Anmelden: Auf iOS zeigt das
+/// System seinen Dialog nur, solange die Nutzergeste frisch ist – und wenn er
+/// ungefragt käme und weggetippt würde, gäbe es keinen zweiten Weg, ihn noch
+/// einmal auszulösen.
+///
+/// Form und Platz wie beim Meldungsstreifen darunter, damit die Lobby nicht
+/// zwei verschiedene Bänder übereinander bekommt.
+class _PushHint extends StatelessWidget {
+  const _PushHint({
+    required this.supported,
+    required this.asking,
+    required this.declined,
+    required this.onEnable,
+    required this.onDismiss,
+  });
+
+  /// `false` heisst auf dem iPhone: läuft im Safari-Tab statt als App vom
+  /// Home-Bildschirm. Ein Knopf hätte dort nichts, was er auslösen könnte.
+  final bool supported;
+  final bool asking;
+  final bool declined;
+  final VoidCallback onEnable;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = !supported
+        ? 'Für Benachrichtigungen muss Spelly auf dem Home-Bildschirm liegen: '
+            'unten auf Teilen tippen, dann „Zum Home-Bildschirm“.'
+        : declined
+            ? 'Benachrichtigungen sind blockiert. Das lässt sich nur in den '
+                'Einstellungen des Browsers wieder ändern.'
+            : 'Eine Meldung, sobald du am Zug bist.';
+
+    return Container(
+      width: double.infinity,
+      color: Palette.boardInk,
+      padding: const EdgeInsets.fromLTRB(16, 8, 6, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Palette.textDim, fontSize: 13),
+            ),
+          ),
+          if (supported && !declined) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: asking ? null : onEnable,
+              child: Text(asking ? 'Moment…' : 'Erlauben'),
+            ),
+          ],
+          IconButton(
+            tooltip: 'Ausblenden',
+            icon: const Icon(Icons.close, size: 18),
+            color: Palette.textDim,
+            onPressed: onDismiss,
           ),
         ],
       ),
