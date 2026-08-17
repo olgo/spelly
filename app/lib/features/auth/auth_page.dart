@@ -5,9 +5,26 @@ import '../../data/auth_repository.dart';
 
 enum _Mode { signIn, signUp }
 
+/// Bewusst grob: Hier soll nur der Tippfehler hängenbleiben, der sonst als
+/// unverständlicher Serverfehler zurückkäme. Ob es die Adresse gibt, weiss
+/// ohnehin erst das Postfach.
+bool looksLikeEmail(String value) {
+  final trimmed = value.trim();
+  return trimmed.contains('@') && trimmed.contains('.');
+}
+
+/// Mindestlänge für ein neues Passwort. Steht hier, weil sowohl die
+/// Registrierung als auch das Zurücksetzen dieselbe Zusage machen müssen.
+const minPasswordLength = 8;
+
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key, required this.auth});
+  const AuthPage({super.key, required this.auth, this.initialError});
   final AuthRepository auth;
+
+  /// Etwas, das schon vor dem ersten Tippen schiefging – etwa ein abgelaufener
+  /// Link aus einer Mail. Ohne diesen Weg stünde man vor der Maske und wüsste
+  /// nicht, warum der Klick nichts bewirkt hat.
+  final String? initialError;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -24,6 +41,12 @@ class _AuthPageState extends State<AuthPage> {
   bool _busy = false;
   String? _error;
   String? _notice;
+
+  @override
+  void initState() {
+    super.initState();
+    _error = widget.initialError;
+  }
 
   @override
   void dispose() {
@@ -66,36 +89,62 @@ class _AuthPageState extends State<AuthPage> {
         // Der AuthGate in main.dart schaltet von selbst weiter.
       }
     } on AuthFailure catch (failure) {
-      setState(() => _error = _message(failure.problem));
+      setState(() => _error = authMessage(failure.problem));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _resend() async {
-    if (_email.text.trim().isEmpty) {
+  /// Gemeinsamer Ablauf für die beiden Mail-Knöpfe.
+  ///
+  /// Beide liefen früher ohne Absicherung: Warf der Aufruf – und der
+  /// wahrscheinlichste Fall ist die Drosselung, wenn jemand zweimal tippt –,
+  /// wurde die Meldung nie gesetzt und der Fehler landete nur in der Konsole.
+  /// Auf dem Bildschirm passierte gar nichts.
+  Future<void> _sendMail(
+    Future<void> Function(String email) send,
+    String success,
+  ) async {
+    final email = _email.text.trim();
+    if (email.isEmpty) {
       setState(() => _error = 'Trag zuerst deine Adresse ein.');
       return;
     }
-    await widget.auth.resendConfirmation(_email.text);
+    if (!looksLikeEmail(email)) {
+      setState(() => _error = 'Das sieht nicht nach einer Adresse aus.');
+      return;
+    }
+
     setState(() {
+      _busy = true;
       _error = null;
-      _notice = 'Bestätigungsmail ist noch einmal unterwegs.';
+      _notice = null;
     });
+
+    try {
+      await send(email);
+      if (mounted) setState(() => _notice = success);
+    } on AuthFailure catch (failure) {
+      if (mounted) setState(() => _error = authMessage(failure.problem));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Das hat nicht geklappt. Versuch es nochmal.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
-  Future<void> _reset() async {
-    if (_email.text.trim().isEmpty) {
-      setState(() => _error = 'Trag zuerst deine Adresse ein.');
-      return;
-    }
-    await widget.auth.sendPasswordReset(_email.text);
-    setState(() {
-      _error = null;
-      _notice = 'Wenn es das Konto gibt, ist die Mail zum Zurücksetzen '
-          'unterwegs.';
-    });
-  }
+  Future<void> _resend() => _sendMail(
+        widget.auth.resendConfirmation,
+        'Bestätigungsmail ist noch einmal unterwegs.',
+      );
+
+  Future<void> _reset() => _sendMail(
+        widget.auth.sendPasswordReset,
+        'Wenn es das Konto gibt, ist die Mail zum Zurücksetzen unterwegs. '
+            'Der Link darin führt direkt zum Setzen eines neuen Passworts.',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +179,7 @@ class _AuthPageState extends State<AuthPage> {
                     const SizedBox(height: 22),
 
                     if (_isSignUp) ...[
-                      _Field(
+                      AuthField(
                         controller: _name,
                         label: 'Anzeigename',
                         textInputAction: TextInputAction.next,
@@ -141,23 +190,19 @@ class _AuthPageState extends State<AuthPage> {
                       const SizedBox(height: 12),
                     ],
 
-                    _Field(
+                    AuthField(
                       controller: _email,
                       label: 'E-Mail',
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                       textInputAction: TextInputAction.next,
-                      validator: (v) {
-                        final value = v?.trim() ?? '';
-                        if (!value.contains('@') || !value.contains('.')) {
-                          return 'Das sieht nicht nach einer Adresse aus.';
-                        }
-                        return null;
-                      },
+                      validator: (v) => looksLikeEmail(v ?? '')
+                          ? null
+                          : 'Das sieht nicht nach einer Adresse aus.',
                     ),
                     const SizedBox(height: 12),
 
-                    _Field(
+                    AuthField(
                       controller: _password,
                       label: 'Passwort',
                       obscure: true,
@@ -175,7 +220,7 @@ class _AuthPageState extends State<AuthPage> {
                               ? 'Passwort fehlt.'
                               : null;
                         }
-                        if (v == null || v.length < 8) {
+                        if (v == null || v.length < minPasswordLength) {
                           return 'Mindestens acht Zeichen.';
                         }
                         return null;
@@ -184,7 +229,7 @@ class _AuthPageState extends State<AuthPage> {
 
                     if (_isSignUp) ...[
                       const SizedBox(height: 12),
-                      _Field(
+                      AuthField(
                         controller: _repeat,
                         label: 'Passwort wiederholen',
                         obscure: true,
@@ -274,8 +319,11 @@ class _AuthPageState extends State<AuthPage> {
       ),
     );
   }
+}
 
-  String _message(AuthProblem problem) => switch (problem) {
+/// Die Texte zu den Anmelde-Problemen. Öffentlich, weil der Bildschirm zum
+/// Setzen eines neuen Passworts dieselben Fälle abbekommt.
+String authMessage(AuthProblem problem) => switch (problem) {
         AuthProblem.invalidCredentials =>
           'E-Mail oder Passwort stimmt nicht.',
         AuthProblem.emailNotConfirmed =>
@@ -284,15 +332,16 @@ class _AuthPageState extends State<AuthPage> {
         AuthProblem.emailTaken =>
           'Mit dieser Adresse gibt es schon ein Konto. Melde dich an.',
         AuthProblem.weakPassword => 'Das Passwort ist zu kurz.',
+        AuthProblem.samePassword =>
+          'Das ist dein bisheriges Passwort. Denk dir ein anderes aus.',
         AuthProblem.invalidEmail => 'Die Adresse stimmt so nicht.',
         AuthProblem.rateLimited =>
           'Zu viele Versuche. Warte ein paar Minuten.',
         AuthProblem.unknown => 'Das hat nicht geklappt. Versuch es nochmal.',
       };
-}
 
-class _Field extends StatelessWidget {
-  const _Field({
+class AuthField extends StatelessWidget {
+  const AuthField({
     required this.controller,
     required this.label,
     this.obscure = false,
