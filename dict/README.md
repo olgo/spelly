@@ -25,8 +25,9 @@ Was im Repo liegt und was nicht:
 | `sources/` | nein | Rohdaten von igerman98, bleiben aus Lizenzgründen draussen (siehe unten) |
 | `dist/` | nein | Bauergebnis. Die abgenommene Fassung liegt in `app/assets/dict/` |
 
-Die ausgelieferte Datei ist damit **reproduzierbar**: Wer `sources/de_DE.dic`
-neu bezieht und `make` laufen lässt, bekommt dieselbe `.dawg` Byte für Byte.
+Die ausgelieferte Datei ist damit reproduzierbar – **mit derselben
+Quelldatei**. `make` ist deterministisch: gleiche `de_DE.dic`, gleiche
+Kuratierung, Byte für Byte dieselbe `.dawg`.
 
 Kompletter Durchlauf:
 
@@ -43,6 +44,89 @@ Die gebaute Datei muss zusätzlich in den Storage-Bucket `dict`, weil
 ```bash
 supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg
 ```
+
+## Die Quelldateien gut aufheben
+
+`sources/` ist leer, wenn du das Repo frisch klonst – die Rohdaten bleiben aus
+Lizenzgründen draussen. Ohne sie bricht `make` sofort ab:
+
+```
+Fehlt: sources/de_DE.dic und de_DE.aff
+```
+
+**„Einfach neu beziehen" ist keine verlässliche Antwort.** igerman98 wird an
+mehreren Stellen gespiegelt, und die Fassungen unterscheiden sich: Das
+`de_DE_frami.dic` aus dem LibreOffice-Repo hat 4.356.903 Bytes, die hier
+verwendete Datei 4.419.933. Damit gebaut, käme eine andere Wortliste heraus –
+nicht falsch, aber eben nicht dieselbe, die in laufenden Partien gilt.
+
+Bewahre `de_DE.dic` und `de_DE.aff` deshalb ausserhalb des Projekts auf
+(Backup, USB-Stick, privater Speicher). Sie gehören nicht ins Repo, aber sie
+sind auch nicht beliebig ersetzbar.
+
+## Ein Wort nachtragen, Schritt für Schritt
+
+Der häufigste Handgriff im laufenden Betrieb: Jemand legt ein Wort, das im
+Duden steht, aber die Liste kennt es nicht.
+
+### 1. Eintragen
+
+`curation/extra.txt` öffnen und anhängen – ein Wort pro Zeile, Gross- und
+Kleinschreibung egal, `ß` wird zu `SS`. Zeilen mit `#` sind Notizen:
+
+```
+# 2026-08-17, von Anna gemeldet: Städtenamen wie Duden-Wort spielbar
+Aachen
+```
+
+### 2. Bauen
+
+```bash
+cd dict
+make install
+```
+
+Auf diese Zeilen achten:
+
+```
+[filter] behalten 541340, davon 1 aus der Nachtragsliste
+[filter] nachgetragen: AACHEN
+```
+
+Steht dort `davon 0`, war das Wort längst in der Liste – dann liegt das
+Problem woanders, und die Schritte 3 bis 5 kannst du dir sparen.
+
+### 3. Server versorgen
+
+```bash
+supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg
+```
+
+Ohne diesen Schritt rechnet `submit-move` weiter mit der alten Liste: Die App
+zeigt den Zug als gültig an, der Server lehnt ihn ab.
+
+### 4. App neu ausrollen
+
+Der Client liest die Wortliste aus dem App-Bundle (`rootBundle.load` in
+`app/lib/domain/dawg.dart`), nicht aus dem Netz. Eine neue Liste erreicht die
+Spieler also erst mit einem neuen Build – Befehl siehe
+[`docs/distribution.md`](../docs/distribution.md).
+
+### 5. Sichern
+
+```bash
+git add dict/curation/extra.txt app/assets/dict/
+git commit -m "Wörterbuch: Abece nachgetragen"
+git push
+```
+
+### Und die Version?
+
+Beim **Nachtragen bleibt `de-2026.1` stehen**, die Datei wird überschrieben.
+Das ist unbedenklich, weil nur etwas dazukommt: Laufende Partien gewinnen ein
+paar Wörter, aber nichts, was gestern galt, wird ungültig.
+
+Wann du sie doch hochzählen musst, steht unter *Versionierung*.
 
 ## Warum die vier Schritte getrennt sind
 
@@ -61,33 +145,10 @@ Der Weg, der funktioniert: aus einem Wiktionary-Dump alle Einträge ziehen, die
 als Vorname, Nachname, Toponym oder Eigenname ausgezeichnet sind. Das Ergebnis
 steht in `curation/propernouns.txt`, `filter.py --exclude` zieht es ab.
 
-Rechne damit, dass Rest bleibt. Schiebe alle paar Monate eine neue
-Wörterbuchversion nach.
-
-## Wörter nachtragen
-
-`curation/extra.txt` ist die Gegenrichtung: Wörter, die trotz allem gelten
-sollen. Sie wirkt **nach** der Ausschlussprüfung, ein Eintrag hier schlägt also
-`propernouns.txt`. Dafür ist sie da – es gibt Wörter, die als Eigenname
-ausgezeichnet sind und trotzdem im Duden stehen.
-
-Ein Wort pro Zeile, Gross- und Kleinschreibung egal. Zeilen mit `#` sind
-Notizen: Hier wird über Monate von Hand entschieden, und warum ein Wort
-drinsteht, ist später oft wichtiger als das Wort selbst.
-
-```bash
-cd dict
-echo "Abece" >> curation/extra.txt
-make install
-```
-
-`filter.py` gibt aus, welche Wörter tatsächlich neu dazugekommen sind – stand
-eines schon in der Liste, sieht man das sofort.
-
-Danach muss die neue Datei auch in den Storage-Bucket, sonst rechnet
-`submit-move` weiter mit der alten. Und weil `games.dict_version` festhält,
-unter welcher Liste eine Partie begonnen wurde, wirkt eine neue Version erst
-für neue Partien (siehe *Versionierung*).
+Rechne damit, dass Rest bleibt. `curation/extra.txt` ist die Gegenrichtung –
+Wörter, die trotz allem gelten sollen, weil sie als Eigenname ausgezeichnet
+sind und trotzdem im Duden stehen. Schritt für Schritt oben unter
+*Ein Wort nachtragen*.
 
 ## Versionierung
 
