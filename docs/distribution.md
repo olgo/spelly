@@ -69,12 +69,34 @@ Redirect URLs:   https://olgo.github.io/spelly/**
 Die zweite Adresse ist das URL-Schema der Android-App. Ohne sie landet der
 Klick in der Bestätigungsmail im Browser statt in der App.
 
-Diese Einstellung trägt auch „Passwort vergessen": Der Link aus der
-Wiederherstellungsmail führt an dieselbe Adresse zurück, und die App schaltet
-dann auf den Bildschirm zum Setzen eines neuen Passworts. Steht die Adresse
-hier nicht, weist Supabase den Rücksprung ab.
-
 `Confirm email` bleibt eingeschaltet.
+
+### Supabase: Vorlage für „Passwort vergessen"
+
+**Dieser Schritt ist Pflicht**, sonst kommt niemand mehr an sein Konto.
+
+*Authentication → Emails → Templates → Reset Password*. Die Vorlage muss
+einen **Code** verschicken, keinen Link:
+
+```html
+<h2>Neues Passwort für Spelly</h2>
+<p>Dein Code:</p>
+<p style="font-size:28px;letter-spacing:4px"><strong>{{ .Token }}</strong></p>
+<p>Trag ihn dort ein, wo du „Passwort vergessen" getippt hast.
+   Der Code gilt eine Stunde.</p>
+<p>Nicht angefordert? Dann ignorier diese Mail einfach.</p>
+```
+
+Der Grund ist eine Sackgasse von iOS: Links öffnen dort **immer** im
+Standardbrowser, nie in einer App vom Home-Bildschirm. Der PKCE-Prüfschlüssel
+entsteht aber genau dort, wo die Mail angefordert wurde – und die Speicher von
+App, Safari und Standardbrowser sind vollständig getrennt. Ein Link könnte
+also nie eingelöst werden. Ein Code kennt das Problem nicht: Er wird da
+eingetippt, wo man ohnehin schon steht, und funktioniert nebenbei auch
+geräteübergreifend.
+
+Die Bestätigungsmail bleibt beim Link – die läuft einmalig beim Anlegen des
+Kontos und ist nicht schlimm, wenn sie im Browser landet.
 
 ### OneSignal
 

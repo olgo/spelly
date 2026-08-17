@@ -106,9 +106,12 @@ lässt sich alles unter Linux oder Windows.
       - Site URL: `https://olgo.github.io/spelly/`
       - Redirect URLs: `https://olgo.github.io/spelly/**` und
         `spelly://login-callback`
-      > Trägt auch „Passwort vergessen": Der Link aus der
-      > Wiederherstellungsmail springt an dieselbe Adresse zurück, und die App
-      > schaltet dann auf den Bildschirm zum Setzen eines neuen Passworts.
+- [ ] *Authentication → Emails → Templates → **Reset Password***: Vorlage auf
+      einen Code umstellen, `{{ .Token }}` statt `{{ .ConfirmationURL }}`
+      (fertiger Text in `docs/distribution.md`).
+      > **Pflicht.** iOS öffnet Links immer im Standardbrowser, nie in der App
+      > vom Home-Bildschirm – der PKCE-Prüfschlüssel liegt aber im Speicher
+      > der App. Mit Link käme niemand mehr an sein Konto.
 
 ## 5. OneSignal einrichten
 

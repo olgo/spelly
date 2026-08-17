@@ -23,14 +23,18 @@ String? linkProblem(Uri url) {
             'neuen an.';
   }
 
-  // Der Prüfschlüssel zum Code liegt im Speicher genau des Browsers, der die
-  // Mail angefordert hat. Auf dem iPhone ist das der häufigste Stolperstein:
-  // getippt in der App vom Home-Bildschirm, geöffnet in Safari – zwei
-  // getrennte Speicher, und der Tausch scheitert.
+  // Bleibt nur noch die Bestätigungsmail übrig – „Passwort vergessen" läuft
+  // inzwischen über einen Code und ohne Link, eben weil dieser Fall auf dem
+  // iPhone unvermeidlich ist: Der PKCE-Prüfschlüssel liegt im Speicher des
+  // Browsers, der die Mail angefordert hat, und iOS öffnet Links immer im
+  // Standardbrowser.
+  //
+  // Halb so wild: Bestätigt wird die Adresse schon auf dem Server, bevor der
+  // Rücksprung überhaupt losgeht. Gescheitert ist nur das automatische
+  // Anmelden – und das ist kein Verlust, das Passwort kennt man ja.
   if (params['code'] != null) {
-    return 'Der Link liess sich hier nicht einlösen. Öffne ihn dort, wo du '
-        '„Passwort vergessen" getippt hast – oder fordere unten eine neue '
-        'Mail an und klick den Link auf demselben Gerät.';
+    return 'Deine Adresse ist bestätigt, nur das automatische Anmelden hat '
+        'hier nicht geklappt. Melde dich einfach mit E-Mail und Passwort an.';
   }
 
   return null;
