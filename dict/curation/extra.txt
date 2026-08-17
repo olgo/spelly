@@ -1,0 +1,16 @@
+# Wörter, die zusätzlich gelten sollen.
+#
+# Kommt ins Spiel, nachdem die Ausschlussliste gewirkt hat – ein Wort hier
+# schlägt also einen Eintrag in propernouns.txt. Genau dafür ist die Datei da:
+# Es gibt Wörter, die als Eigenname markiert sind und trotzdem im Duden stehen.
+#
+# Ein Wort pro Zeile, Gross- und Kleinschreibung egal. Zeilen mit # sind
+# Notizen, Leerzeilen ebenso – so lässt sich festhalten, warum etwas drinsteht.
+# ß wird zu SS, wie überall im Spiel.
+#
+# Nach dem Ändern:
+#
+#     cd dict && make install
+#
+# Danach die neue Datei auch in den Storage-Bucket legen, sonst rechnet der
+# Server weiter mit der alten Liste (siehe README).

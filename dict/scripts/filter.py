@@ -48,19 +48,27 @@ def normalise(word):
     return word
 
 
-def load_exclusions(paths):
-    excluded = set()
+def load_list(paths, kind):
+    """Wörter aus Kuratierungslisten lesen.
+
+    Zeilen mit # sind Notizen: In diesen Dateien wird über Monate von Hand
+    entschieden, und warum etwas drinsteht, ist später oft wichtiger als das
+    Wort selbst.
+    """
+    words = set()
     for path in paths:
         try:
             with open(path, encoding="utf-8") as fh:
                 for line in fh:
+                    if line.lstrip().startswith("#"):
+                        continue
                     form = normalise(line)
                     if form:
-                        excluded.add(form)
+                        words.add(form)
         except FileNotFoundError:
-            print(f"[filter] Ausschlussliste fehlt, übersprungen: {path}",
+            print(f"[filter] {kind} fehlt, übersprungen: {path}",
                   file=sys.stderr)
-    return excluded
+    return words
 
 
 def main():
@@ -78,8 +86,10 @@ def main():
 
     MAX_LEN = args.max_len
 
-    excluded = load_exclusions(args.exclude)
-    print(f"[filter] {len(excluded)} Ausschlüsse geladen", file=sys.stderr)
+    excluded = load_list(args.exclude, "Ausschlussliste")
+    included = load_list(args.include, "Nachtragsliste")
+    print(f"[filter] {len(excluded)} Ausschlüsse, {len(included)} Nachträge "
+          "geladen", file=sys.stderr)
 
     stats = {"gelesen": 0, "zeichen": 0, "laenge": 0, "eigenname": 0}
     words = set()
@@ -104,12 +114,12 @@ def main():
 
             words.add(form)
 
-    for path in args.include:
-        with open(path, encoding="utf-8") as fh:
-            for line in fh:
-                form = normalise(line)
-                if form:
-                    words.add(form)
+    # Nachträge zuletzt und damit nach der Ausschlussprüfung: Ein Wort in der
+    # Nachtragsliste schlägt einen Eintrag in der Ausschlussliste. Genau dafür
+    # ist sie da – es gibt Wörter, die als Eigenname markiert sind und trotzdem
+    # im Duden stehen.
+    added = included - words
+    words |= included
 
     with open(args.out, "w", encoding="utf-8") as out:
         for word in sorted(words):
@@ -123,7 +133,11 @@ def main():
           f"verworfen: Zeichen {stats['zeichen']}, "
           f"Länge {stats['laenge']}, Eigenname {stats['eigenname']}",
           file=sys.stderr)
-    print(f"[filter] behalten {len(words)}", file=sys.stderr)
+    print(f"[filter] behalten {len(words)}, davon {len(added)} aus der "
+          "Nachtragsliste", file=sys.stderr)
+    if added:
+        print(f"[filter] nachgetragen: {' '.join(sorted(added))}",
+              file=sys.stderr)
     print("[filter] Verteilung nach Länge:", file=sys.stderr)
     for length in sorted(by_length):
         print(f"          {length:2d}: {by_length[length]}", file=sys.stderr)
