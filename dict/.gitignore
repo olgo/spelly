@@ -1,2 +1,9 @@
+# Rohdaten von igerman98 und die daraus abgeleiteten Zwischenstände. Bleiben
+# aus Lizenzgründen draussen, beziehbar über `make` (siehe README).
 sources/
+
+# Bauergebnis. Die abgenommene Fassung liegt in app/assets/dict/.
 dist/
+
+# curation/ ist bewusst NICHT ignoriert: Dort steckt die Handarbeit, die sich
+# im Gegensatz zu allem anderen hier nicht wiederbeschaffen lässt.

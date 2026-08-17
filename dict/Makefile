@@ -3,7 +3,14 @@ ENCODING ?= ISO-8859-15
 
 SRC      := sources
 DIST     := dist
-EXCLUDE  := $(SRC)/propernouns.txt
+
+# Handarbeit, im Repo. Getrennt von sources/, weil dort die Rohdaten von
+# igerman98 liegen, die aus Lizenzgründen draussen bleiben – die Entscheidungen
+# darüber, was gilt, sind dagegen unser eigenes Werk und wären beim nächsten
+# frischen Klon sonst weg.
+CURATION := curation
+EXCLUDE  := $(CURATION)/propernouns.txt
+INCLUDE  := $(CURATION)/extra.txt
 
 .PHONY: all install clean check
 
@@ -17,19 +24,15 @@ $(SRC)/de_DE.dic:
 	@echo "Beziehen von der igerman98-Projektseite und hier ablegen."
 	@exit 1
 
-# Ausschlussliste aus einem Wiktionary-Dump: alle Einträge mit Wortart
-# Vorname, Nachname, Toponym oder Eigenname. Optional – fehlt sie, laeuft
-# der Filter durch und meldet das.
-$(EXCLUDE):
-	@echo "Hinweis: $(EXCLUDE) fehlt, Eigennamen werden nicht gefiltert."
-	@touch $@
-
 # --- Verarbeitung --------------------------------------------------------
 $(SRC)/fullforms.txt: $(SRC)/de_DE.dic scripts/expand.py
 	python3 scripts/expand.py $< $@ --encoding $(ENCODING)
 
-$(SRC)/filtered.txt: $(SRC)/fullforms.txt $(EXCLUDE) scripts/filter.py
-	python3 scripts/filter.py $< $@ --exclude $(EXCLUDE)
+# Die beiden Kuratierungslisten sind echte Abhängigkeiten: Wer ein Wort
+# nachträgt, bekommt beim nächsten `make` eine neue Wortliste, ohne an das
+# Ausdehnen der Vollformen zu rühren.
+$(SRC)/filtered.txt: $(SRC)/fullforms.txt $(EXCLUDE) $(INCLUDE) scripts/filter.py
+	python3 scripts/filter.py $< $@ --exclude $(EXCLUDE) --include $(INCLUDE)
 
 $(DIST)/$(VERSION).dawg: $(SRC)/filtered.txt scripts/build_dawg.py
 	mkdir -p $(DIST)
