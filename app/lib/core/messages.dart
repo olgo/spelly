@@ -23,6 +23,8 @@ String moveMessage(String code, [Object? detail]) => switch (code) {
       'stale_turn' => 'Die Partie hat sich geändert. Neu geladen.',
       'game_not_active' => 'Die Partie ist beendet.',
       'bag_too_small' => 'Zum Tauschen liegen zu wenige Steine im Beutel.',
+      'nothing_to_exchange' => 'Wähl erst die Steine aus, die weg sollen.',
+      'exchange_failed' => 'Tauschen hat nicht geklappt. Versuch es nochmal.',
       'pass_failed' => 'Passen hat nicht geklappt. Versuch es nochmal.',
       _ => 'Der Zug ging nicht durch ($code).',
     };

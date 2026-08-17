@@ -141,7 +141,7 @@ class _DraggableTileState extends State<_DraggableTile> {
   Widget build(BuildContext context) {
     final isBlank = widget.letter == '?';
     final shown = isBlank ? (_chosen ?? '?') : widget.letter;
-    final face = _Face(letter: shown, blank: isBlank);
+    final face = RackTileFace(letter: shown, blank: isBlank);
 
     if (!widget.enabled) return Opacity(opacity: 0.45, child: face);
 
@@ -158,7 +158,7 @@ class _DraggableTileState extends State<_DraggableTile> {
     return Draggable<DragTile>(
       // Kein fromIndex: Dieser Stein kommt vom Rack, nicht vom Brett.
       data: DragTile(shown, isBlank: isBlank),
-      feedback: _Face(letter: shown, blank: isBlank, elevated: true),
+      feedback: RackTileFace(letter: shown, blank: isBlank, elevated: true),
       childWhenDragging: Opacity(opacity: 0.25, child: face),
       // Nochmal antippen erlaubt, den Blanko-Buchstaben zu ändern, solange
       // der Stein noch auf dem Rack liegt.
@@ -178,8 +178,11 @@ class _DraggableTileState extends State<_DraggableTile> {
   }
 }
 
-class _Face extends StatelessWidget {
-  const _Face({
+/// Ein Stein, wie er auf dem Rack aussieht. Öffentlich, weil der Tausch-Dialog
+/// dieselben Steine zeigt – dort dürfen sie nicht anders aussehen als hier.
+class RackTileFace extends StatelessWidget {
+  const RackTileFace({
+    super.key,
     required this.letter,
     this.blank = false,
     this.elevated = false,

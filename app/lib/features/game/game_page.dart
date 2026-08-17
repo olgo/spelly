@@ -4,6 +4,7 @@ import '../../core/messages.dart';
 import '../../core/theme.dart';
 import '../../data/game_repository.dart';
 import 'board_view.dart';
+import 'exchange_sheet.dart';
 import 'game_controller.dart';
 import 'rack_view.dart';
 
@@ -186,12 +187,25 @@ class _Actions extends StatelessWidget {
                     : controller.clearPending,
                 child: const Text('Zurücknehmen'),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: controller.isMyTurn ? controller.pass : null,
-                child: const Text('Passen'),
+              // Mischen als Symbol, weil es der einzige Knopf hier ist, den man
+              // mehrmals pro Zug drückt – und weil für ein Wort mehr kein
+              // Platz ist. Auch dann erlaubt, wenn der Gegner am Zug ist:
+              // Genau dann sitzt man davor und sucht.
+              IconButton(
+                onPressed: controller.availableRack.length < 2
+                    ? null
+                    : controller.shuffleRack,
+                icon: const Icon(Icons.shuffle),
+                iconSize: 20,
+                color: Palette.textDim,
+                tooltip: 'Steine mischen',
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints.tightFor(width: 40, height: 40),
               ),
-              const SizedBox(width: 8),
+              const Spacer(),
+              _MoreMenu(controller: controller),
+              const SizedBox(width: 4),
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: Palette.signal,
@@ -212,6 +226,64 @@ class _Actions extends StatelessWidget {
           _StatusLine(controller: controller),
         ],
       ),
+    );
+  }
+}
+
+enum _GameAction { exchange, pass }
+
+/// Passen und Tauschen liegen hinter den drei Punkten. Beides sind seltene
+/// Züge, und die Zeile hat für zwei weitere beschriftete Knöpfe keinen Platz –
+/// auf einem kleinen Telefon würden alle so schmal, dass ein Fehlgriff auf
+/// „Passen" statt „Tauschen" einen Zug kostet.
+class _MoreMenu extends StatelessWidget {
+  const _MoreMenu({required this.controller});
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final left = controller.snapshot?.tilesLeft ?? 0;
+    final bagShort = left < GameController.minBagForExchange;
+
+    return PopupMenuButton<_GameAction>(
+      enabled: controller.isMyTurn && !controller.submitting,
+      icon: const Icon(Icons.more_vert),
+      iconSize: 20,
+      color: Palette.graphite,
+      tooltip: 'Weitere Züge',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 200),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _GameAction.exchange,
+          enabled: controller.canExchange,
+          // Ein ausgegrauter Punkt ohne Begründung lässt einen rätseln. Die
+          // Schwelle steht im Regelwerk, nicht im Zufall: Unter sieben Steinen
+          // im Beutel lehnt auch der Server ab.
+          child: Text(bagShort
+              ? 'Tauschen – Beutel fast leer'
+              : 'Steine tauschen'),
+        ),
+        const PopupMenuItem(
+          value: _GameAction.pass,
+          child: Text('Passen'),
+        ),
+      ],
+      onSelected: (action) async {
+        switch (action) {
+          case _GameAction.pass:
+            await controller.pass();
+          case _GameAction.exchange:
+            final rack = controller.snapshot?.rack ?? const <String>[];
+            final chosen = await showExchangeSheet(
+              context,
+              rack,
+              hasPending: controller.pending.isNotEmpty,
+            );
+            if (chosen == null || !context.mounted) return;
+            await controller.exchange(chosen);
+        }
+      },
     );
   }
 }
