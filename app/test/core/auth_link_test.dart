@@ -23,15 +23,16 @@ void main() {
       expect(message, isNot(contains('abgelaufen')));
     });
 
-    // Der wichtigste Fall: Der Code steht noch in der Adresse, also hat
-    // supabase_flutter nicht aufgeräumt – das tut es nur nach einem geglückten
-    // Tausch. Aufgerufen wird das nur ohne Sitzung, es kann also nicht der
-    // Nachklang eines erfolgreichen Einlösens sein.
-    test('nicht eingelöster Code weist auf das falsche Gerät hin', () {
+    // Der Code steht noch in der Adresse, also hat supabase_flutter nicht
+    // aufgeräumt – das tut es nur nach einem geglückten Tausch. Aufgerufen
+    // wird das nur ohne Sitzung, es kann also nicht der Nachklang eines
+    // erfolgreichen Einlösens sein.
+    test('nicht eingelöster Code beruhigt statt zu alarmieren', () {
       final message = linkProblem(
         Uri.parse('https://olgo.github.io/spelly/?code=abc123'),
       );
-      expect(message, contains('Gerät'));
+      expect(message, contains('bestätigt'));
+      expect(message, contains('mit E-Mail und Passwort an'));
     });
 
     test('ein Fehlercode geht dem Code vor', () {

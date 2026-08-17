@@ -36,11 +36,17 @@ class _AuthPageState extends State<AuthPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _repeat = TextEditingController();
+  final _code = TextEditingController();
 
   _Mode _mode = _Mode.signIn;
   bool _busy = false;
   String? _error;
   String? _notice;
+
+  /// Die Adresse, an die der Code ging. Festgehalten statt beim Einlösen neu
+  /// aus dem Feld gelesen: Wer zwischendurch etwas anderes eintippt, bekäme
+  /// sonst einen Fehler, der nach einem falschen Code aussieht.
+  String? _codeSentTo;
 
   @override
   void initState() {
@@ -54,6 +60,7 @@ class _AuthPageState extends State<AuthPage> {
     _email.dispose();
     _password.dispose();
     _repeat.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -101,18 +108,18 @@ class _AuthPageState extends State<AuthPage> {
   /// wahrscheinlichste Fall ist die Drosselung, wenn jemand zweimal tippt –,
   /// wurde die Meldung nie gesetzt und der Fehler landete nur in der Konsole.
   /// Auf dem Bildschirm passierte gar nichts.
-  Future<void> _sendMail(
+  Future<bool> _sendMail(
     Future<void> Function(String email) send,
     String success,
   ) async {
     final email = _email.text.trim();
     if (email.isEmpty) {
       setState(() => _error = 'Trag zuerst deine Adresse ein.');
-      return;
+      return false;
     }
     if (!looksLikeEmail(email)) {
       setState(() => _error = 'Das sieht nicht nach einer Adresse aus.');
-      return;
+      return false;
     }
 
     setState(() {
@@ -124,12 +131,15 @@ class _AuthPageState extends State<AuthPage> {
     try {
       await send(email);
       if (mounted) setState(() => _notice = success);
+      return true;
     } on AuthFailure catch (failure) {
       if (mounted) setState(() => _error = authMessage(failure.problem));
+      return false;
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Das hat nicht geklappt. Versuch es nochmal.');
       }
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -140,11 +150,48 @@ class _AuthPageState extends State<AuthPage> {
         'Bestätigungsmail ist noch einmal unterwegs.',
       );
 
-  Future<void> _reset() => _sendMail(
-        widget.auth.sendPasswordReset,
-        'Wenn es das Konto gibt, ist die Mail zum Zurücksetzen unterwegs. '
-            'Der Link darin führt direkt zum Setzen eines neuen Passworts.',
-      );
+  Future<void> _reset() async {
+    final sent = await _sendMail(
+      widget.auth.sendPasswordReset,
+      'Wenn es das Konto gibt, ist eine Mail mit einem sechsstelligen Code '
+          'unterwegs. Trag ihn unten ein.',
+    );
+    if (sent && mounted) {
+      setState(() {
+        _codeSentTo = _email.text.trim();
+        _code.clear();
+      });
+    }
+  }
+
+  /// Löst den Code ein. Danach übernimmt der AuthGate: Das
+  /// `passwordRecovery`-Ereignis führt auf den Bildschirm für das neue
+  /// Passwort, hier ist nichts weiter zu tun.
+  Future<void> _verifyCode() async {
+    final code = _code.text.trim();
+    if (code.length < 6) {
+      setState(() => _error = 'Der Code hat sechs Ziffern.');
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+      _notice = null;
+    });
+
+    try {
+      await widget.auth.verifyRecoveryCode(email: _codeSentTo!, code: code);
+    } on AuthFailure catch (failure) {
+      if (mounted) setState(() => _error = authMessage(failure.problem));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Das hat nicht geklappt. Versuch es nochmal.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +310,44 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                     ],
 
+                    // Erscheint erst, wenn die Mail draussen ist. Kein Link
+                    // zum Klicken: iOS öffnet Links immer im Standardbrowser,
+                    // nie in der App vom Home-Bildschirm – der Code dagegen
+                    // wird da eingetippt, wo man ohnehin schon steht.
+                    if (_codeSentTo != null) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AuthField(
+                              controller: _code,
+                              label: 'Code aus der Mail',
+                              keyboardType: TextInputType.number,
+                              autofillHints: const [AutofillHints.oneTimeCode],
+                              textInputAction: TextInputAction.done,
+                              // Bewusst ohne Prüfung: Das Formular wird auch
+                              // vom Anmelde-Knopf geprüft, und dort darf ein
+                              // leeres Code-Feld nicht im Weg stehen.
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Palette.signal,
+                              foregroundColor: Palette.boneInk,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 18,
+                              ),
+                            ),
+                            onPressed: _busy ? null : _verifyCode,
+                            child: const Text('Weiter'),
+                          ),
+                        ],
+                      ),
+                    ],
+
                     const SizedBox(height: 20),
                     FilledButton(
                       style: FilledButton.styleFrom(
@@ -288,6 +373,10 @@ class _AuthPageState extends State<AuthPage> {
                                 _mode = _isSignUp ? _Mode.signIn : _Mode.signUp;
                                 _error = null;
                                 _notice = null;
+                                // Wer die Seite wechselt, ist mit dem
+                                // Zurücksetzen durch – das Feld hat dort
+                                // nichts mehr zu suchen.
+                                _codeSentTo = null;
                               }),
                       child: Text(
                         _isSignUp
@@ -334,6 +423,9 @@ String authMessage(AuthProblem problem) => switch (problem) {
         AuthProblem.weakPassword => 'Das Passwort ist zu kurz.',
         AuthProblem.samePassword =>
           'Das ist dein bisheriges Passwort. Denk dir ein anderes aus.',
+        AuthProblem.invalidCode =>
+          'Der Code stimmt nicht oder ist abgelaufen. Fordere unten einen '
+              'neuen an.',
         AuthProblem.invalidEmail => 'Die Adresse stimmt so nicht.',
         AuthProblem.rateLimited =>
           'Zu viele Versuche. Warte ein paar Minuten.',

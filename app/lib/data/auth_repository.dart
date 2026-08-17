@@ -10,6 +10,7 @@ enum AuthProblem {
   emailTaken,
   weakPassword,
   samePassword,
+  invalidCode,
   invalidEmail,
   rateLimited,
   unknown,
@@ -86,6 +87,32 @@ class AuthRepository {
     }
   }
 
+  /// Löst den sechsstelligen Code aus der Wiederherstellungsmail ein.
+  ///
+  /// Der Weg über einen Link ist auf dem iPhone eine Sackgasse: iOS öffnet
+  /// Links immer im Standardbrowser, nie in einer Home-Bildschirm-App. Der
+  /// PKCE-Prüfschlüssel entsteht aber dort, wo die Mail angefordert wurde –
+  /// und die drei Speicher (App, Safari, Standardbrowser) sind vollständig
+  /// getrennt. Ein Code kennt dieses Problem nicht: Er wird da eingetippt, wo
+  /// man ohnehin schon steht.
+  ///
+  /// Löst dasselbe `passwordRecovery`-Ereignis aus wie ein eingelöster Link
+  /// (`gotrue_client.dart:632`) – die Weiche im AuthGate bleibt also dieselbe.
+  Future<void> verifyRecoveryCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email.trim(),
+        token: code.trim(),
+        type: OtpType.recovery,
+      );
+    } on AuthException catch (e) {
+      throw AuthFailure(_classify(e), e.message);
+    }
+  }
+
   /// Setzt ein neues Passwort für die laufende Sitzung.
   ///
   /// Der eigentliche Abschluss von „Passwort vergessen": Der Klick in der Mail
@@ -126,6 +153,12 @@ class AuthRepository {
     final message = e.message.toLowerCase();
     if (message.contains('email not confirmed')) {
       return AuthProblem.emailNotConfirmed;
+    }
+    // Falscher wie abgelaufener Code kommen mit demselben Satz zurück – das
+    // ist Absicht, sonst liesse sich raten, welche Codes es gibt.
+    if (message.contains('token has expired') ||
+        message.contains('invalid or has expired')) {
+      return AuthProblem.invalidCode;
     }
     if (message.contains('invalid login')) return AuthProblem.invalidCredentials;
     if (message.contains('already registered') ||
