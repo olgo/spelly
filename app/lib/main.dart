@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/auth_link.dart';
 import 'core/onesignal_bridge.dart';
 import 'core/push.dart';
 import 'core/session_storage.dart';
@@ -9,6 +10,7 @@ import 'data/auth_repository.dart';
 import 'data/game_repository.dart';
 import 'data/lobby_repository.dart';
 import 'features/auth/auth_page.dart';
+import 'features/auth/new_password_page.dart';
 import 'features/lobby/lobby_page.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -73,17 +75,34 @@ class _AuthGateState extends State<AuthGate> {
   String? _pendingGameId;
   bool _pushRegistered = false;
 
+  /// Die Sitzung stammt aus einer Wiederherstellungsmail. Dann muss vor allem
+  /// anderen ein neues Passwort gesetzt werden – sonst wäre der Link ein
+  /// Einmal-Zugang gewesen und das vergessene Passwort stünde weiterhin.
+  bool _recovering = false;
+
   @override
   void initState() {
     super.initState();
     _auth.changes.listen((state) {
+      // Kommt zuverlässig an, auch wenn der Link die App überhaupt erst
+      // gestartet hat: Der Ereignisstrom von gotrue ist ein BehaviorSubject
+      // und reicht das letzte Ereignis an später hinzukommende Zuhörer nach.
+      if (state.event == AuthChangeEvent.passwordRecovery) _recovering = true;
       if (state.session != null && !_pushRegistered) {
         _pushRegistered = true;
         _setUpPush();
       }
-      if (state.session == null) _pushRegistered = false;
+      if (state.session == null) {
+        _pushRegistered = false;
+        _recovering = false;
+      }
       if (mounted) setState(() {});
-    });
+    },
+        // Ein gescheitertes Einlösen eines Mail-Links kommt als Fehler auf
+        // diesem Strom an. Ohne Handler wäre das ein unbehandelter Fehler in
+        // der Ereignisschleife; die Erklärung für die Person am Bildschirm
+        // liefert stattdessen `_linkProblem`.
+        onError: (Object error) => debugPrint('auth state error: $error'));
 
     if (_auth.isSignedIn) {
       _pushRegistered = true;
@@ -102,7 +121,16 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_auth.isSignedIn) return AuthPage(auth: _auth);
+    if (!_auth.isSignedIn) {
+      return AuthPage(auth: _auth, initialError: linkProblem(Uri.base));
+    }
+
+    if (_recovering) {
+      return NewPasswordPage(
+        auth: _auth,
+        onDone: () => setState(() => _recovering = false),
+      );
+    }
 
     return LobbyPage(
       key: ValueKey(_pendingGameId),

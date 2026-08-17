@@ -9,6 +9,7 @@ enum AuthProblem {
   emailNotConfirmed,
   emailTaken,
   weakPassword,
+  samePassword,
   invalidEmail,
   rateLimited,
   unknown,
@@ -85,6 +86,20 @@ class AuthRepository {
     }
   }
 
+  /// Setzt ein neues Passwort für die laufende Sitzung.
+  ///
+  /// Der eigentliche Abschluss von „Passwort vergessen": Der Klick in der Mail
+  /// meldet zwar an, ändert aber nichts. Ohne diesen Schritt bliebe das alte,
+  /// vergessene Passwort stehen – und beim nächsten Start stünde man wieder
+  /// vor derselben Maske.
+  Future<void> updatePassword(String password) async {
+    try {
+      await _client.auth.updateUser(UserAttributes(password: password));
+    } on AuthException catch (e) {
+      throw AuthFailure(_classify(e), e.message);
+    }
+  }
+
   Future<void> signOut() async {
     // Beim Abmelden die OneSignal-Subscription vom Nutzer lösen, sonst
     // bekommt das Gerät weiter Meldungen für ein Konto, das hier niemand
@@ -116,6 +131,11 @@ class AuthRepository {
     if (message.contains('already registered') ||
         message.contains('already been registered')) {
       return AuthProblem.emailTaken;
+    }
+    // Kommt nur beim Zurücksetzen vor: Supabase lehnt ab, wenn das neue
+    // Passwort dem alten gleicht.
+    if (message.contains('should be different')) {
+      return AuthProblem.samePassword;
     }
     if (message.contains('password') && message.contains('least')) {
       return AuthProblem.weakPassword;
