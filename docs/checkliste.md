@@ -103,11 +103,12 @@ lässt sich alles unter Linux oder Windows.
       zurückgebaut (E-Mail-Feld, Bestätigungshinweis, „Mail nochmal senden",
       „Passwort vergessen")
 - [ ] *Authentication → URL Configuration*:
-      - Site URL: `https://spelly.example.org`
-      - Redirect URLs: `https://spelly.example.org/**` und
+      - Site URL: `https://olgo.github.io/spelly/`
+      - Redirect URLs: `https://olgo.github.io/spelly/**` und
         `spelly://login-callback`
-      > Noch offen – hier muss die echte GitHub-Pages-Adresse rein, sobald
-      > die Web-App dort liegt (Abschnitt 9).
+      > Trägt auch „Passwort vergessen": Der Link aus der
+      > Wiederherstellungsmail springt an dieselbe Adresse zurück, und die App
+      > schaltet dann auf den Bildschirm zum Setzen eines neuen Passworts.
 
 ## 5. OneSignal einrichten
 
@@ -166,13 +167,17 @@ supabase functions deploy send-push
 
 ```bash
 cd app
-flutter build web --release \
+flutter build web --release --base-href /spelly/ \
   --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=<anon-key> \
-  --dart-define=AUTH_REDIRECT=https://spelly.example.org
+  --dart-define=AUTH_REDIRECT=https://olgo.github.io/spelly/
 ```
 
-- [ ] `build/web/` auf den Webspeicher, HTTPS aktiv
+`--base-href` ist bei GitHub Pages Pflicht: Das Verzeichnis heisst wie das
+Repository. Ohne die Angabe sucht die App ihre Dateien im Wurzelverzeichnis
+und lädt gar nicht erst.
+
+- [ ] `build/web/` auf den `gh-pages`-Branch, HTTPS aktiv
 - [ ] Auf einem echten iPhone testen: Safari, Teilen, Zum Home-Bildschirm,
       über das Symbol starten, registrieren, Benachrichtigung kommt an
 
@@ -188,15 +193,16 @@ flutter build web --release \
         --dart-define=SUPABASE_ANON_KEY=<anon-key> \
         --dart-define=AUTH_REDIRECT=spelly://login-callback
       ```
-- [ ] `app-release.apk` auf den Webspeicher
+- [ ] `app-release.apk` neben die Web-App auf `gh-pages`, damit der Link zur
+      Adresse unten passt
 - [ ] Auf einem echten Android-Gerät installieren und durchspielen
 
 ## 11. Versionsstand hinterlegen
 
 ```sql
 insert into app_release (platform, version, download_url)
-values ('android', '0.1.0', 'https://spelly.example.org/app-release.apk'),
-       ('web', '0.1.0', 'https://spelly.example.org')
+values ('android', '0.1.0', 'https://olgo.github.io/spelly/app-release.apk'),
+       ('web', '0.1.0', 'https://olgo.github.io/spelly/')
 on conflict (platform) do update
 set version = excluded.version,
     download_url = excluded.download_url,

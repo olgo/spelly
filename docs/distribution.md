@@ -61,13 +61,18 @@ Mailgun – die kostenlosen Kontingente reichen für einen Freundeskreis weit):
 *Authentication → Emails → SMTP Settings*, dann in *URL Configuration*:
 
 ```
-Site URL:        https://spelly.example.org
-Redirect URLs:   https://spelly.example.org/**
+Site URL:        https://olgo.github.io/spelly/
+Redirect URLs:   https://olgo.github.io/spelly/**
                  spelly://login-callback
 ```
 
 Die zweite Adresse ist das URL-Schema der Android-App. Ohne sie landet der
 Klick in der Bestätigungsmail im Browser statt in der App.
+
+Diese Einstellung trägt auch „Passwort vergessen": Der Link aus der
+Wiederherstellungsmail führt an dieselbe Adresse zurück, und die App schaltet
+dann auf den Bildschirm zum Setzen eines neuen Passworts. Steht die Adresse
+hier nicht, weist Supabase den Rücksprung ab.
 
 `Confirm email` bleibt eingeschaltet.
 
@@ -114,8 +119,11 @@ flutter build apk --release \
   --dart-define=AUTH_REDIRECT=spelly://login-callback
 ```
 
-Ergebnis: `build/app/outputs/flutter-apk/app-release.apk`. Irgendwo ablegen,
-wo deine Leute drankommen, und den Link verschicken.
+Ergebnis: `build/app/outputs/flutter-apk/app-release.apk`. Am einfachsten neben
+die Web-App auf `gh-pages` legen, dann liegt der Link unter
+`https://olgo.github.io/spelly/app-release.apk` und passt zu `app_release`
+weiter unten. Wer die Datei nicht im Branch haben will, hängt sie stattdessen
+an ein GitHub-Release und trägt dessen Adresse ein.
 
 Beim ersten Mal muss auf dem Telefon die Installation aus dieser Quelle erlaubt
 werden – Android fragt von selbst und führt in die richtige Einstellung.
@@ -124,16 +132,20 @@ werden – Android fragt von selbst und führt in die richtige Einstellung.
 
 ```bash
 cd app
-flutter build web --release \
+flutter build web --release --base-href /spelly/ \
   --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=<anon-key> \
-  --dart-define=AUTH_REDIRECT=https://spelly.example.org
+  --dart-define=AUTH_REDIRECT=https://olgo.github.io/spelly/
 ```
 
-`build/web/` auf einen beliebigen Webspeicher legen. Zwei Bedingungen:
+`build/web/` kommt auf den `gh-pages`-Branch, GitHub Pages liefert das unter
+`https://olgo.github.io/spelly/` aus. Zwei Bedingungen:
 
 * **HTTPS ist Pflicht.** Ohne gibt es keinen Service Worker und damit kein Push.
-* Kein Unterverzeichnis, oder `--base-href` entsprechend setzen.
+* `--base-href` muss zum Unterverzeichnis passen. Bei GitHub Pages heisst das
+  Verzeichnis wie das Repository, also `/spelly/`. Ohne die Angabe sucht die
+  App ihre Dateien im Wurzelverzeichnis und lädt gar nicht erst – dasselbe
+  gilt für den Service Worker von OneSignal.
 
 Anleitung für die iPhone-Runde, am besten mit dem Link mitschicken:
 
@@ -152,7 +164,8 @@ deshalb gibt es die Tabelle `app_release`:
 
 ```sql
 insert into app_release (platform, version, download_url, notes)
-values ('android', '0.2.0', 'https://…/app-release.apk', 'Einladungen')
+values ('android', '0.2.0',
+        'https://olgo.github.io/spelly/app-release.apk', 'Einladungen')
 on conflict (platform) do update
 set version = excluded.version,
     download_url = excluded.download_url,
