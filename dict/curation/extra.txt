@@ -14,3 +14,8 @@
 #
 # Danach die neue Datei auch in den Storage-Bucket legen, sonst rechnet der
 # Server weiter mit der alten Liste (siehe README).
+EY
+AYE
+HE
+YONI
+HA
