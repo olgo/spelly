@@ -39,11 +39,19 @@ make install    # kopiert nach app/assets/dict/
 ```
 
 Die gebaute Datei muss zusätzlich in den Storage-Bucket `dict`, weil
-`submit-move` sie serverseitig lädt:
+`submit-move` sie serverseitig lädt. `storage cp` verlangt das
+`--experimental`-Flag; ausserdem verweigert es sich, wenn unter demselben
+Namen schon etwas liegt (`KeyAlreadyExists`, HTTP 409) – ein Überschreiben
+kennt der Befehl nicht. Solange der Dateiname gleich bleibt (Version nicht
+hochgezählt, siehe *Versionierung*), also erst löschen, dann neu hochladen:
 
 ```bash
-supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg
+supabase storage rm ss:///dict/de-2026.1.dawg --experimental
+supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg --experimental
 ```
+
+Nur beim allerersten Hochladen unter einem neuen Dateinamen reicht `cp`
+allein.
 
 ## Die Quelldateien gut aufheben
 
@@ -99,11 +107,14 @@ Problem woanders, und die Schritte 3 bis 5 kannst du dir sparen.
 ### 3. Server versorgen
 
 ```bash
-supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg
+supabase storage rm ss:///dict/de-2026.1.dawg --experimental
+supabase storage cp dist/de-2026.1.dawg ss:///dict/de-2026.1.dawg --experimental
 ```
 
-Ohne diesen Schritt rechnet `submit-move` weiter mit der alten Liste: Die App
-zeigt den Zug als gültig an, der Server lehnt ihn ab.
+Erst löschen, dann neu hochladen: `storage cp` überschreibt nicht, unter
+diesem Namen liegt beim Nachtragen ja schon eine Fassung (Details oben unter
+*Kompletter Durchlauf*). Ohne diesen Schritt rechnet `submit-move` weiter mit
+der alten Liste: Die App zeigt den Zug als gültig an, der Server lehnt ihn ab.
 
 ### 4. App neu ausrollen
 
