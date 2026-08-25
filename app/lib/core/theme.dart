@@ -9,19 +9,23 @@ import 'package:flutter/material.dart';
 /// üblichen Signalfarben. Sie sollen die Steine nicht überstrahlen; die
 /// einzige laute Farbe im Spiel gehört der Zugvorschau.
 abstract final class Palette {
-  static const graphite = Color(0xFF16232C); // App-Hintergrund
-  static const boardInk = Color(0xFF0E1B24); // Brettfläche
-  static const cellSlate = Color(0xFF1A2C38); // leeres Feld
-  static const hairline = Color(0xFF2A3E4B);
+  // Teal statt Navy – dem App-Icon angenähert (Grundton, nicht die volle
+  // Sättigung: Rot und Teal liegen nahe der Komplementärachse, ein Rotton,
+  // der auf Navy gedämpft wirkt, würde auf Teal automatisch kräftiger
+  // wirken, siehe wordDouble/wordTriple unten).
+  static const graphite = Color(0xFF123638); // App-Hintergrund
+  static const boardInk = Color(0xFF0A2E30); // Brettfläche
+  static const cellSlate = Color(0xFF123B3D); // leeres Feld
+  static const hairline = Color(0xFF2E4D50);
 
   static const bone = Color(0xFFE9DFC9); // Steinfläche
   static const boneShade = Color(0xFFC9BC9F); // Steinkante
   static const boneInk = Color(0xFF23313A); // Buchstabe auf dem Stein
 
-  static const letterDouble = Color(0xFF27505F);
-  static const letterTriple = Color(0xFF357C88);
-  static const wordDouble = Color(0xFF6E4650);
-  static const wordTriple = Color(0xFF96513F);
+  static const letterDouble = Color(0xFF285868);
+  static const letterTriple = Color(0xFF3B85A0);
+  static const wordDouble = Color(0xFF5E3B3D);
+  static const wordTriple = Color(0xFF7D4B41);
 
   static const signal = Color(0xFFF0B24A); // gültige Vorschau
   static const warn = Color(0xFFCF6155); // ungültige Vorschau
