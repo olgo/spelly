@@ -13,10 +13,10 @@ abstract final class Palette {
   // Sättigung: Rot und Teal liegen nahe der Komplementärachse, ein Rotton,
   // der auf Navy gedämpft wirkt, würde auf Teal automatisch kräftiger
   // wirken, siehe wordDouble/wordTriple unten).
-  static const graphite = Color(0xFF135C60); // App-Hintergrund
-  static const boardInk = Color(0xFF074F53); // Brettfläche
-  static const cellSlate = Color(0xFF11585D); // leeres Feld
-  static const hairline = Color(0xFF316166);
+  static const graphite = Color(0xFF3F1362); // App-Hintergrund
+  static const boardInk = Color(0xFF1B2522); // Brettfläche
+  static const cellSlate = Color(0xFF5D1954); // leeres Feld
+  static const hairline = Color(0xFF365471);
 
   static const bone = Color(0xFFE9DFC9); // Steinfläche
   static const boneShade = Color(0xFFC9BC9F); // Steinkante
@@ -24,8 +24,8 @@ abstract final class Palette {
 
   static const letterDouble = Color(0xFF285868);
   static const letterTriple = Color(0xFF3B85A0);
-  static const wordDouble = Color(0xFF5E3B3D);
-  static const wordTriple = Color(0xFF7D4B41);
+  static const wordDouble = Color(0xFF8A5886);
+  static const wordTriple = Color(0xFFB323B6);
 
   static const signal = Color(0xFFF0B24A); // gültige Vorschau
   static const warn = Color(0xFFCF6155); // ungültige Vorschau
