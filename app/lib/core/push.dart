@@ -30,6 +30,11 @@ class PushService {
 
   bool get hasPermission => OneSignalApi.hasPermission;
 
+  /// Ob dieses Gerät bei OneSignal wirklich als Empfänger eingetragen ist –
+  /// die Frage, die für „bekommt man Meldungen" eigentlich zählt, siehe
+  /// OneSignalApi.isSubscribed.
+  Future<bool> isSubscribed() => OneSignalApi.isSubscribed();
+
   /// Verknüpft dieses Gerät mit dem Supabase-Nutzer als OneSignal
   /// `external_id` – darüber zielt der Server, ganz ohne eigene Token-Tabelle.
   ///

@@ -16,7 +16,36 @@ abstract final class OneSignalApi {
 
   /// Kurzschluss vor dem Punktzugriff: Ohne `Notification` im Fenster würde
   /// `Notification.permission` einen Fehler werfen.
+  ///
+  /// Achtung: Das ist die rohe Browser-Erlaubnis, nicht OneSignals eigene
+  /// Anmeldung – für die Frage „bekommt dieses Gerät Meldungen" ist
+  /// [isSubscribed] die richtige Abfrage, nicht diese hier.
   static bool get hasPermission => isSupported && _permission == 'granted';
+
+  /// Ob OneSignal dieses Gerät wirklich als Empfänger führt.
+  ///
+  /// Getrennt von [hasPermission], weil das zwei verschiedene Zustände sind:
+  /// Die Browser-Erlaubnis kann erteilt sein, ohne dass OneSignal je etwas
+  /// davon erfahren hat – etwa wenn sie über die Browser-Einstellungen
+  /// erteilt wurde statt über [requestPermission]. Im Dashboard steht das
+  /// Gerät dann als „Never Subscribed", obwohl der Browser „granted" meldet.
+  /// Genau das war der Fehler, der Meldungen verhindert hat.
+  static Future<bool> isSubscribed() async {
+    if (!isSupported) return false;
+    try {
+      return await _withSdk(
+        (os) async => os.user.pushSubscription.optedIn ?? false,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Schliesst die OneSignal-Anmeldung aktiv ab. Nötig, weil sie sich nicht
+  /// von selbst einstellt, nur weil der Browser die Erlaubnis erteilt hat –
+  /// siehe [isSubscribed].
+  static Future<void> _optIn() =>
+      _withSdk((os) => os.user.pushSubscription.optIn().toDart);
 
   /// Leer mit Absicht: `web/index.html` ruft `OneSignal.init` bereits auf,
   /// bevor Flutter startet – dort steht auch die Service-Worker-Konfiguration,
@@ -30,10 +59,11 @@ abstract final class OneSignalApi {
 
   static Future<bool> requestPermission() async {
     if (!isSupported) return false;
-    // Der Rückgabewert des SDK ist je nach Version mal ein Wahrheitswert, mal
-    // nichts. Verlässlich ist danach der Stand im Browser selbst.
     await _withSdk((os) => os.notifications.requestPermission().toDart);
-    return hasPermission;
+    // Browser-Erlaubnis reicht nicht – ohne diesen Schritt bliebe die
+    // OneSignal-Anmeldung offen, siehe isSubscribed.
+    await _optIn();
+    return isSubscribed();
   }
 
   static void onClick(void Function(Map<String, dynamic>? data) handler) {
@@ -99,11 +129,24 @@ extension type _OneSignal(JSObject _) implements JSObject {
   // Gross geschrieben im SDK; hier klein, damit es zu den übrigen Namen passt.
   @JS('Notifications')
   external _Notifications get notifications;
+
+  @JS('User')
+  external _User get user;
 }
 
 extension type _Notifications(JSObject _) implements JSObject {
   external JSPromise<JSAny?> requestPermission();
   external void addEventListener(String event, JSFunction listener);
+}
+
+extension type _User(JSObject _) implements JSObject {
+  @JS('PushSubscription')
+  external _PushSubscription get pushSubscription;
+}
+
+extension type _PushSubscription(JSObject _) implements JSObject {
+  external bool? get optedIn;
+  external JSPromise<JSAny?> optIn();
 }
 
 extension type _ClickEvent(JSObject _) implements JSObject {
