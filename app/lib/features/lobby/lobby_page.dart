@@ -43,15 +43,28 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
   bool _pushAsking = false;
   bool _pushDeclined = false;
 
+  /// Vorsichtiger Default: lieber den Streifen einen Moment zu lange zeigen,
+  /// als ihn fälschlich zu verstecken. Genau der umgekehrte Fehler – die
+  /// rohe Browser-Erlaubnis als ausreichend zu nehmen – hat den Knopf einmal
+  /// verschwinden lassen, obwohl OneSignal das Gerät nie als Empfänger
+  /// eingetragen hatte.
+  bool _subscribed = false;
+
   @override
   void initState() {
     super.initState();
     _refresh();
+    _checkSubscription();
     if (widget.openGameId != null) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _openGame(widget.openGameId!),
       );
     }
+  }
+
+  Future<void> _checkSubscription() async {
+    final subscribed = await widget.push.isSubscribed();
+    if (mounted) setState(() => _subscribed = subscribed);
   }
 
   @override
@@ -114,6 +127,10 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
       _pushAsking = false;
       _pushDeclined = !granted;
     });
+    // Den echten Stand nachziehen statt ihm nur zu vertrauen – enable()
+    // meldet zwar schon zurück, ob es geklappt hat, aber erst hier zeigt
+    // sich verlässlich, ob OneSignal das Gerät jetzt wirklich führt.
+    await _checkSubscription();
   }
 
   @override
@@ -142,7 +159,7 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
       ),
       body: Column(
         children: [
-          if (!_pushHintHidden && !widget.push.hasPermission)
+          if (!_pushHintHidden && !_subscribed)
             _PushHint(
               supported: widget.push.isSupported,
               asking: _pushAsking,
