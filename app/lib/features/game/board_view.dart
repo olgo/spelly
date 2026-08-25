@@ -183,17 +183,17 @@ class _EmptySquare extends StatelessWidget {
                     padding: const EdgeInsets.all(1),
                     child: Text(
                       label,
-                      // Auf dem Telefon ist ein Feld gut zwanzig Pixel breit.
-                      // Die Deckkraft trägt hier mehr als die Grösse: Sie
-                      // kauft Lesbarkeit, ohne dem Feld Gewicht zu geben, das
-                      // den Steinen zusteht. Laufweite bleibt bewusst offen –
-                      // kleine Schrift braucht mehr davon, nicht weniger.
+                      // War auf dem Telefon zu klein, um "2B" von "3W" zu
+                      // unterscheiden, ohne die Augen zusammenzukneifen –
+                      // Grösse und Deckkraft beide angehoben. Laufweite
+                      // bleibt trotzdem offen: Auch grössere Schrift auf
+                      // zwanzig Pixeln profitiert noch davon.
                       style: TextStyle(
-                        fontSize: size * 0.40,
+                        fontSize: size * 0.46,
                         height: 1,
                         letterSpacing: 0.2,
                         fontWeight: FontWeight.w700,
-                        color: Palette.text.withValues(alpha: 0.85),
+                        color: Palette.text.withValues(alpha: 0.95),
                       ),
                     ),
                   ),
