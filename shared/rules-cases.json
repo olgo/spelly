@@ -24,7 +24,7 @@
         { "r": 7, "c": 9, "l": "U", "b": false },
         { "r": 7, "c": 10, "l": "S", "b": false }
       ],
-      "expect": { "score": 10, "words": [{ "w": "HAUS", "s": 10 }] }
+      "expect": { "score": 5, "words": [{ "w": "HAUS", "s": 5 }] }
     },
     {
       "name": "Eröffnung ohne Mittelfeld",
@@ -58,7 +58,7 @@
         { "r": 7, "c": 12, "l": "N", "b": false },
         { "r": 7, "c": 13, "l": "E", "b": false }
       ],
-      "expect": { "score": 70, "words": [{ "w": "SIEBENE", "s": 20 }] }
+      "expect": { "score": 60, "words": [{ "w": "SIEBENE", "s": 10 }] }
     },
     {
       "name": "Senkrecht durch einen bestehenden Buchstaben",
@@ -74,7 +74,7 @@
         { "r": 8, "c": 8, "l": "U", "b": false },
         { "r": 9, "c": 8, "l": "S", "b": false }
       ],
-      "expect": { "score": 10, "words": [{ "w": "MAUS", "s": 10 }] }
+      "expect": { "score": 6, "words": [{ "w": "MAUS", "s": 6 }] }
     },
     {
       "name": "Kreuzwörter zählen mit",
@@ -91,11 +91,11 @@
         { "r": 8, "c": 9, "l": "S", "b": false }
       ],
       "expect": {
-        "score": 12,
+        "score": 10,
         "words": [
-          { "w": "EIS", "s": 4 },
+          { "w": "EIS", "s": 3 },
           { "w": "HE", "s": 3 },
-          { "w": "AI", "s": 3 },
+          { "w": "AI", "s": 2 },
           { "w": "US", "s": 2 }
         ]
       }
@@ -114,7 +114,7 @@
         { "r": 8, "c": 8, "l": "U", "b": false },
         { "r": 9, "c": 8, "l": "S", "b": false }
       ],
-      "expect": { "score": 4, "words": [{ "w": "MAUS", "s": 4 }] }
+      "expect": { "score": 3, "words": [{ "w": "MAUS", "s": 3 }] }
     },
     {
       "name": "Lücke im gelegten Wort",

@@ -174,31 +174,42 @@ class _EmptySquare extends StatelessWidget {
               ? Border.all(color: Palette.signal.withValues(alpha: 0.5), width: 1)
               : null,
         ),
-        child: label.isEmpty
-            ? null
-            : Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Padding(
-                    padding: const EdgeInsets.all(1),
-                    child: Text(
-                      label,
-                      // War auf dem Telefon zu klein, um "2B" von "3W" zu
-                      // unterscheiden, ohne die Augen zusammenzukneifen –
-                      // Grösse und Deckkraft beide angehoben. Laufweite
-                      // bleibt trotzdem offen: Auch grössere Schrift auf
-                      // zwanzig Pixeln profitiert noch davon.
-                      style: TextStyle(
-                        fontSize: size * 0.46,
-                        height: 1,
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w700,
-                        color: Palette.text.withValues(alpha: 0.95),
+        // Das Mittelfeld trägt keinen Bonus (siehe premium in tiles.dart) –
+        // die Markierung, dass der erste Zug hier durch muss, kommt deshalb
+        // als eigenes Symbol statt als Bonus-Text.
+        child: isCentre
+            ? Center(
+                child: Icon(
+                  Icons.star_rounded,
+                  size: size * 0.5,
+                  color: Palette.signal.withValues(alpha: 0.7),
+                ),
+              )
+            : label.isEmpty
+                ? null
+                : Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.all(1),
+                        child: Text(
+                          label,
+                          // War auf dem Telefon zu klein, um "2B" von "3W" zu
+                          // unterscheiden, ohne die Augen zusammenzukneifen –
+                          // Grösse und Deckkraft beide angehoben. Laufweite
+                          // bleibt trotzdem offen: Auch grössere Schrift auf
+                          // zwanzig Pixeln profitiert noch davon.
+                          style: TextStyle(
+                            fontSize: size * 0.46,
+                            height: 1,
+                            letterSpacing: 0.2,
+                            fontWeight: FontWeight.w700,
+                            color: Palette.text.withValues(alpha: 0.95),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
       ),
     );
   }
