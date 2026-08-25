@@ -41,7 +41,8 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
   /// jedem Start denselben Streifen wegsehen müssen.
   bool _pushHintHidden = false;
   bool _pushAsking = false;
-  bool _pushDeclined = false;
+  PushEnableOutcome? _pushOutcome;
+  String? _pushDetail;
 
   /// Vorsichtiger Default: lieber den Streifen einen Moment zu lange zeigen,
   /// als ihn fälschlich zu verstecken. Genau der umgekehrte Fehler – die
@@ -121,11 +122,12 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
 
   Future<void> _enablePush() async {
     setState(() => _pushAsking = true);
-    final granted = await widget.push.enable();
+    final result = await widget.push.enable();
     if (!mounted) return;
     setState(() {
       _pushAsking = false;
-      _pushDeclined = !granted;
+      _pushOutcome = result.granted ? null : result.outcome;
+      _pushDetail = result.detail;
     });
     // Den echten Stand nachziehen statt ihm nur zu vertrauen – enable()
     // meldet zwar schon zurück, ob es geklappt hat, aber erst hier zeigt
@@ -163,7 +165,8 @@ class _LobbyPageState extends State<LobbyPage> with SingleTickerProviderStateMix
             _PushHint(
               supported: widget.push.isSupported,
               asking: _pushAsking,
-              declined: _pushDeclined,
+              outcome: _pushOutcome,
+              detail: _pushDetail,
               onEnable: _enablePush,
               onDismiss: () => setState(() => _pushHintHidden = true),
             ),
@@ -216,7 +219,8 @@ class _PushHint extends StatelessWidget {
   const _PushHint({
     required this.supported,
     required this.asking,
-    required this.declined,
+    required this.outcome,
+    required this.detail,
     required this.onEnable,
     required this.onDismiss,
   });
@@ -225,7 +229,15 @@ class _PushHint extends StatelessWidget {
   /// Home-Bildschirm. Ein Knopf hätte dort nichts, was er auslösen könnte.
   final bool supported;
   final bool asking;
-  final bool declined;
+
+  /// `null`, solange noch nichts versucht wurde oder es zuletzt geklappt hat.
+  final PushEnableOutcome? outcome;
+
+  /// Rohe Fehlermeldung zu [outcome] – nur zum Debuggen gedacht. Steht auf
+  /// dem iPhone als Home-Bildschirm-App im UI, weil dort keine Konsole
+  /// erreichbar ist; provisorisch, bis die eigentliche Ursache gefunden ist.
+  final String? detail;
+
   final VoidCallback onEnable;
   final VoidCallback onDismiss;
 
@@ -234,10 +246,21 @@ class _PushHint extends StatelessWidget {
     final text = !supported
         ? 'Für Benachrichtigungen muss Spelly auf dem Home-Bildschirm liegen: '
             'unten auf Teilen tippen, dann „Zum Home-Bildschirm“.'
-        : declined
-            ? 'Benachrichtigungen sind blockiert. Das lässt sich nur in den '
-                'Einstellungen des Browsers wieder ändern.'
-            : 'Eine Meldung, sobald du am Zug bist.';
+        : switch (outcome) {
+            PushEnableOutcome.browserDenied =>
+              'Benachrichtigungen sind blockiert. Das lässt sich nur in den '
+                  'Einstellungen des Browsers wieder ändern.',
+            PushEnableOutcome.sdkUnavailable =>
+              'Die Anmeldung kam nicht durch (evtl. ein Blocker im Browser). '
+                  'Nochmal versuchen.',
+            PushEnableOutcome.subscriptionFailed =>
+              'Erlaubt, aber die Anmeldung ist fehlgeschlagen. Nochmal '
+                  'versuchen.',
+            _ => 'Eine Meldung, sobald du am Zug bist.',
+          };
+    // Nur eine echte Browser-Blockade lässt sich nicht durch einen weiteren
+    // Versuch beheben – bei allen anderen Fehlschlägen bleibt der Knopf da.
+    final canRetry = supported && outcome != PushEnableOutcome.browserDenied;
 
     return Container(
       width: double.infinity,
@@ -246,12 +269,23 @@ class _PushHint extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: Palette.textDim, fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  text,
+                  style: const TextStyle(color: Palette.textDim, fontSize: 13),
+                ),
+                if (detail != null)
+                  Text(
+                    '[Debug] $detail',
+                    style: const TextStyle(color: Palette.textDim, fontSize: 10),
+                  ),
+              ],
             ),
           ),
-          if (supported && !declined) ...[
+          if (canRetry) ...[
             const SizedBox(width: 8),
             TextButton(
               onPressed: asking ? null : onEnable,

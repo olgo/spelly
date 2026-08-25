@@ -57,13 +57,89 @@ abstract final class OneSignalApi {
 
   static Future<void> logout() => _withSdk((os) => os.logout().toDart);
 
-  static Future<bool> requestPermission() async {
-    if (!isSupported) return false;
-    await _withSdk((os) => os.notifications.requestPermission().toDart);
-    // Browser-Erlaubnis reicht nicht – ohne diesen Schritt bliebe die
-    // OneSignal-Anmeldung offen, siehe isSubscribed.
-    await _optIn();
-    return isSubscribed();
+  /// Fragt nach der Browser-Erlaubnis und schliesst danach die
+  /// OneSignal-Anmeldung ab – anders als [isSubscribed] schluckt das hier
+  /// keinen Fehler still, sondern meldet zurück, an welchem der drei
+  /// Schritte es gescheitert ist. Nötig, weil „Browser erlaubt, OneSignal
+  /// meldet trotzdem nicht an" ein anderer, anders zu behebender Fall ist
+  /// als eine echte Browser-Blockade – und beides bis hierhin zum selben
+  /// `false` zusammenfiel.
+  static Future<PushEnableResult> requestPermission() async {
+    if (!isSupported) {
+      return const PushEnableResult(PushEnableOutcome.unsupported);
+    }
+
+    try {
+      await _withSdk((os) => os.notifications.requestPermission().toDart);
+    } catch (error) {
+      // SDK kam nicht/nicht rechtzeitig an, siehe _withSdk-Frist unten –
+      // etwa weil ein Inhaltsblocker das CDN-Skript ausliess.
+      return PushEnableResult(PushEnableOutcome.sdkUnavailable, '$error');
+    }
+
+    // Kein Popup gemeldet heisst: Der Browser hat nicht (neu) zugestimmt.
+    if (_permission != 'granted') {
+      return PushEnableResult(
+        PushEnableOutcome.browserDenied,
+        'Notification.permission=$_permission',
+      );
+    }
+
+    try {
+      // Browser-Erlaubnis reicht nicht – ohne diesen Schritt bliebe die
+      // OneSignal-Anmeldung offen, siehe isSubscribed.
+      await _optIn();
+    } catch (error) {
+      return PushEnableResult(
+        error is TimeoutException
+            ? PushEnableOutcome.sdkUnavailable
+            : PushEnableOutcome.subscriptionFailed,
+        '$error',
+      );
+    }
+
+    // Bewusst nicht über isSubscribed(): Die schluckt Fehler still, hier
+    // soll ein Fehlschlag beim Nachlesen sichtbar bleiben statt einfach als
+    // "nicht angemeldet" durchzugehen.
+    Future<bool> readOptedIn() => _withSdk(
+          (os) async => os.user.pushSubscription.optedIn ?? false,
+        );
+
+    bool subscribed;
+    try {
+      subscribed = await readOptedIn();
+    } catch (error) {
+      return PushEnableResult(
+        error is TimeoutException
+            ? PushEnableOutcome.sdkUnavailable
+            : PushEnableOutcome.subscriptionFailed,
+        '$error',
+      );
+    }
+
+    if (!subscribed) {
+      // Möglicher Wettlauf: OneSignals interner Stand könnte optIn() noch
+      // nicht nachgezogen haben. Ein einmaliger kurzer Nachschlag klärt das,
+      // bevor es als echter Fehlschlag gilt.
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      try {
+        subscribed = await readOptedIn();
+      } catch (error) {
+        return PushEnableResult(
+          error is TimeoutException
+              ? PushEnableOutcome.sdkUnavailable
+              : PushEnableOutcome.subscriptionFailed,
+          '$error',
+        );
+      }
+    }
+
+    return subscribed
+        ? const PushEnableResult(PushEnableOutcome.granted)
+        : const PushEnableResult(
+            PushEnableOutcome.subscriptionFailed,
+            'optIn() erfolgreich, optedIn bleibt aber false',
+          );
   }
 
   static void onClick(void Function(Map<String, dynamic>? data) handler) {
@@ -104,6 +180,30 @@ abstract final class OneSignalApi {
     }
     return result.future.timeout(const Duration(seconds: 15));
   }
+}
+
+/// Warum requestPermission() nicht zu einer Anmeldung geführt hat – wichtig
+/// für die Lobby-Anzeige: nur einer der Gründe heisst wirklich "nur über die
+/// Browser-Einstellungen zu beheben". Steht hier und in der nativen Brücke
+/// je eigenständig, wie auch [OneSignalApi] selbst dort dupliziert ist –
+/// `onesignal_bridge.dart` reicht per bedingtem Export ohnehin nur eine der
+/// beiden Dateien durch.
+enum PushEnableOutcome {
+  granted,
+  unsupported,
+  browserDenied,
+  sdkUnavailable,
+  subscriptionFailed,
+}
+
+class PushEnableResult {
+  const PushEnableResult(this.outcome, [this.detail]);
+  final PushEnableOutcome outcome;
+
+  /// Rohe Fehlermeldung – nur fürs Debuggen, kein Endnutzer-Text.
+  final String? detail;
+
+  bool get granted => outcome == PushEnableOutcome.granted;
 }
 
 @JS('OneSignalDeferred')

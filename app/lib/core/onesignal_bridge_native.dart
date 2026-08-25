@@ -24,12 +24,33 @@ abstract final class OneSignalApi {
   /// `true`: Wer schon einmal abgelehnt hat, wird zu den Einstellungen
   /// geschickt, statt einen Dialog zu bekommen, den das System nicht mehr
   /// zeigt.
-  static Future<bool> requestPermission() =>
-      OneSignal.Notifications.requestPermission(true);
+  static Future<PushEnableResult> requestPermission() async {
+    final granted = await OneSignal.Notifications.requestPermission(true);
+    return PushEnableResult(
+      granted ? PushEnableOutcome.granted : PushEnableOutcome.browserDenied,
+    );
+  }
 
   static void onClick(void Function(Map<String, dynamic>? data) handler) {
     OneSignal.Notifications.addClickListener(
       (event) => handler(event.notification.additionalData),
     );
   }
+}
+
+/// Siehe die Web-Fassung dieser Brücke – derselbe Typ, unabhängig definiert,
+/// weil `onesignal_bridge.dart` nur eine der beiden Dateien durchreicht.
+enum PushEnableOutcome {
+  granted,
+  unsupported,
+  browserDenied,
+  sdkUnavailable,
+  subscriptionFailed,
+}
+
+class PushEnableResult {
+  const PushEnableResult(this.outcome, [this.detail]);
+  final PushEnableOutcome outcome;
+  final String? detail;
+  bool get granted => outcome == PushEnableOutcome.granted;
 }

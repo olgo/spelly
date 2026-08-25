@@ -5,6 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'onesignal_bridge.dart';
 
+// PushEnableOutcome/PushEnableResult stehen als Rückgabetyp von enable() in
+// der öffentlichen Schnittstelle dieser Datei – ohne den Re-Export müsste
+// jede Aufrufstelle onesignal_bridge.dart zusätzlich selbst importieren.
+export 'onesignal_bridge.dart' show PushEnableOutcome, PushEnableResult;
+
 /// Push-Anmeldung für beide Welten.
 ///
 /// OneSignal übernimmt die Geräte-Registrierung selbst (App-ID kommt aus
@@ -64,23 +69,32 @@ class PushService {
   /// Fragt nach der Erlaubnis. Gehört an einen Knopf: Der Systemdialog
   /// erscheint nur, solange die Nutzergeste frisch ist.
   ///
-  /// Meldet `false` auch dann, wenn schon einmal abgelehnt wurde – das System
-  /// zeigt den Dialog dann gar nicht mehr, und es hilft nur noch der Weg über
-  /// die Einstellungen.
-  Future<bool> enable() async {
+  /// Meldet auch dann kein `granted`, wenn schon einmal abgelehnt wurde – das
+  /// System zeigt den Dialog dann gar nicht mehr, und es hilft nur noch der
+  /// Weg über die Einstellungen. Das Ergebnis unterscheidet diesen Fall aber
+  /// von anderen Fehlschlägen (z. B. Browser erlaubt, OneSignal-Anmeldung
+  /// scheitert trotzdem) – die brauchen in der Lobby eine andere Meldung.
+  Future<PushEnableResult> enable() async {
     final user = _client.auth.currentUser;
-    if (user == null || !OneSignalApi.isSupported) return false;
+    if (user == null || !OneSignalApi.isSupported) {
+      return const PushEnableResult(PushEnableOutcome.unsupported);
+    }
 
     try {
-      final granted = await OneSignalApi.requestPermission();
-      if (!granted) return false;
+      final result = await OneSignalApi.requestPermission();
+      if (result.detail != null) {
+        debugPrint(
+          'OneSignal requestPermission: ${result.outcome} — ${result.detail}',
+        );
+      }
+      if (!result.granted) return result;
       // Noch einmal: Beim ersten Mal ist die Anmeldung womöglich erst durch
       // die erteilte Erlaubnis entstanden.
       await OneSignalApi.login(user.id);
-      return true;
+      return result;
     } catch (error) {
       debugPrint('OneSignal permission request failed: $error');
-      return false;
+      return PushEnableResult(PushEnableOutcome.subscriptionFailed, '$error');
     }
   }
 
