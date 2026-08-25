@@ -29,7 +29,12 @@
   <title>Spelly</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#16232C">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <!-- iOS liest Web-App-Icons ausschliesslich von hier, nie aus manifest.json.
+       Deshalb die randlose "maskable"-Fassung statt Icon-192.png: Bei einem
+       Icon mit transparenten Ecken füllt iOS die Transparenz selbst mit Weiss
+       auf – sichtbar als weisser Rand auf dem Home-Bildschirm und im kurzen
+       nativen Startbildschirm, bevor unsere eigene Ladeseite greift. -->
+  <link rel="apple-touch-icon" href="icons/Icon-maskable-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
 
   <!-- OneSignal Web SDK für Browser-Push (Web/iOS-PWA). -->
