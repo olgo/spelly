@@ -29,18 +29,25 @@ const Map<String, int> distribution = {
 };
 
 /// T/D = Wort dreifach/doppelt, t/d = Buchstabe dreifach/doppelt.
+///
+/// Sonst die klassische, punktsymmetrische Originalanordnung – bewusst zwei
+/// Abweichungen: Das Mittelfeld trägt keinen Bonus mehr (war D), die vier
+/// 2B-Felder, die es diagonal berühren, ebenso nicht mehr (waren d), und vier
+/// der 2W-Felder – die dem Zentrum nächstgelegene, symmetrische Vierergruppe
+/// – sind jetzt 3B statt 2W. Jede Änderung kam als vollständige symmetrische
+/// Gruppe, nie einzeln, das Layout bleibt drehungs- und spiegelsymmetrisch.
 const String premium =
     'T..d...T...d..T'
     '.D...t...t...D.'
     '..D...d.d...D..'
     'd..D...d...D..d'
-    '....D.....D....'
+    '....t.....t....'
     '.t...t...t...t.'
-    '..d...d.d...d..'
-    'T..d...D...d..T'
-    '..d...d.d...d..'
+    '..d.........d..'
+    'T..d.......d..T'
+    '..d.........d..'
     '.t...t...t...t.'
-    '....D.....D....'
+    '....t.....t....'
     'd..D...d...D..d'
     '..D...d.d...D..'
     '.D...t...t...D.'

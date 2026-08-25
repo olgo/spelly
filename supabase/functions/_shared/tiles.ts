@@ -36,21 +36,24 @@ export function newBag(): string[] {
 }
 
 // Prämienfelder.  T/D = Wort dreifach/doppelt, t/d = Buchstabe dreifach/doppelt.
-// Diese Anordnung ist die klassische, punktsymmetrische Variante. Falls du dich
-// vom Original absetzen willst, ist das hier die einzige Stelle, die du ändern
-// musst – der Rest der Engine liest das Layout nur aus.
+// Sonst die klassische, punktsymmetrische Originalanordnung – bewusst zwei
+// Abweichungen, siehe tiles.dart (Client) für die ausführliche Begründung:
+// Mittelfeld ohne Bonus (war D), die vier diagonal angrenzenden 2B-Felder
+// ebenso ohne Bonus (waren d), vier 2W-Felder – die dem Zentrum nächste
+// symmetrische Vierergruppe – sind jetzt 3B statt 2W. Änderungen hier gehören
+// in dieselbe Commit-Einheit wie in tiles.dart.
 const PREMIUM_ROWS = [
   "T..d...T...d..T",
   ".D...t...t...D.",
   "..D...d.d...D..",
   "d..D...d...D..d",
-  "....D.....D....",
+  "....t.....t....",
   ".t...t...t...t.",
-  "..d...d.d...d..",
-  "T..d...D...d..T",
-  "..d...d.d...d..",
+  "..d.........d..",
+  "T..d.......d..T",
+  "..d.........d..",
   ".t...t...t...t.",
-  "....D.....D....",
+  "....t.....t....",
   "d..D...d...D..d",
   "..D...d.d...D..",
   ".D...t...t...D.",
