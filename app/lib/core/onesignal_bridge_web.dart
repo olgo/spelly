@@ -50,6 +50,14 @@ abstract final class OneSignalApi {
   static Future<void> _optIn() =>
       _withSdk((os) => os.user.pushSubscription.optIn().toDart);
 
+  /// Verwirft eine evtl. vorhandene lokale Anmeldung, bevor [_optIn] sie neu
+  /// aufbaut. Nötig, weil eine lokal gecachte `id` nicht heisst, dass der
+  /// Server sie je gespeichert hat – ein früherer, serverseitig
+  /// gescheiterter Versuch kann trotzdem eine `id` hinterlassen haben, die
+  /// [_optIn] sonst als "schon erledigt" ansieht.
+  static Future<void> _optOut() =>
+      _withSdk((os) => os.user.pushSubscription.optOut().toDart);
+
   /// Leer mit Absicht: `web/index.html` ruft `OneSignal.init` bereits auf,
   /// bevor Flutter startet – dort steht auch die Service-Worker-Konfiguration,
   /// die vom Ausliefer-Pfad abhängt.
@@ -89,6 +97,10 @@ abstract final class OneSignalApi {
     }
 
     try {
+      // Erst verwerfen, dann neu anmelden – siehe [_optOut]: eine lokal
+      // hängengebliebene `id` von einem früheren, nie beim Server
+      // angekommenen Versuch soll nicht als "schon erledigt" durchgehen.
+      await _optOut();
       // Browser-Erlaubnis reicht nicht – ohne diesen Schritt bliebe die
       // OneSignal-Anmeldung offen, siehe isSubscribed.
       await _optIn();
@@ -104,14 +116,16 @@ abstract final class OneSignalApi {
     // Bewusst nicht über isSubscribed(): Die schluckt Fehler still, hier
     // soll ein Fehlschlag beim Nachlesen sichtbar bleiben statt einfach als
     // "nicht angemeldet" durchzugehen. Und bewusst `id`, nicht `optedIn` –
-    // siehe Doc-Kommentar auf [isSubscribed].
-    Future<bool> readSubscribed() => _withSdk(
-          (os) async => os.user.pushSubscription.id != null,
+    // siehe Doc-Kommentar auf [isSubscribed]. Der rohe Wert (nicht nur ein
+    // bool) landet im Fehlschlag-Detailtext – falls die `id` doch wieder
+    // dasteht, sehen wir wenigstens, dass sie es ist, statt nur "false".
+    Future<String?> readSubscriptionId() => _withSdk(
+          (os) async => os.user.pushSubscription.id,
         );
 
-    bool subscribed;
+    String? id;
     try {
-      subscribed = await readSubscribed();
+      id = await readSubscriptionId();
     } catch (error) {
       return PushEnableResult(
         error is TimeoutException
@@ -126,10 +140,10 @@ abstract final class OneSignalApi {
     // gespeichert hat – ein echter Netzwerk-Umweg, der spürbar länger dauern
     // kann als das blosse Setzen von optedIn. Ein paar Sekunden nachfragen,
     // bevor es als echter Fehlschlag gilt.
-    for (var i = 0; i < 5 && !subscribed; i++) {
+    for (var i = 0; i < 5 && id == null; i++) {
       await Future<void>.delayed(const Duration(seconds: 1));
       try {
-        subscribed = await readSubscribed();
+        id = await readSubscriptionId();
       } catch (error) {
         return PushEnableResult(
           error is TimeoutException
@@ -140,11 +154,11 @@ abstract final class OneSignalApi {
       }
     }
 
-    return subscribed
+    return id != null
         ? const PushEnableResult(PushEnableOutcome.granted)
         : const PushEnableResult(
             PushEnableOutcome.subscriptionFailed,
-            'optIn() erfolgreich, aber keine Subscription-ID nach 5s',
+            'optOut()+optIn() erfolgreich, aber keine Subscription-ID nach 5s',
           );
   }
 
@@ -254,6 +268,7 @@ extension type _PushSubscription(JSObject _) implements JSObject {
   external String? get id;
   external bool? get optedIn;
   external JSPromise<JSAny?> optIn();
+  external JSPromise<JSAny?> optOut();
 }
 
 extension type _ClickEvent(JSObject _) implements JSObject {
