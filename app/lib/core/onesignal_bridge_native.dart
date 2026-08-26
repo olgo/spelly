@@ -9,11 +9,12 @@ abstract final class OneSignalApi {
 
   static bool get hasPermission => OneSignal.Notifications.permission;
 
-  /// Ob OneSignal dieses Gerät wirklich als Empfänger führt – auf Android/iOS
-  /// fallen Erlaubnis und Anmeldung praktisch zusammen, anders als im Web
-  /// (siehe die Web-Fassung dieser Brücke für den Hintergrund).
+  /// Ob OneSignal dieses Gerät wirklich als Empfänger führt. Geprüft wird
+  /// die Subscription-`id`, nicht `optedIn` – siehe die Web-Fassung dieser
+  /// Brücke für den Hintergrund (dasselbe `optedIn`-Missverständnis gilt
+  /// laut SDK-Dokumentation auch nativ).
   static Future<bool> isSubscribed() async =>
-      OneSignal.User.pushSubscription.optedIn ?? false;
+      OneSignal.User.pushSubscription.id != null;
 
   static Future<void> initialize(String appId) => OneSignal.initialize(appId);
 

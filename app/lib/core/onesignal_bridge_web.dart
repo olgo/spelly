@@ -24,17 +24,20 @@ abstract final class OneSignalApi {
 
   /// Ob OneSignal dieses Gerät wirklich als Empfänger führt.
   ///
-  /// Getrennt von [hasPermission], weil das zwei verschiedene Zustände sind:
-  /// Die Browser-Erlaubnis kann erteilt sein, ohne dass OneSignal je etwas
-  /// davon erfahren hat – etwa wenn sie über die Browser-Einstellungen
-  /// erteilt wurde statt über [requestPermission]. Im Dashboard steht das
-  /// Gerät dann als „Never Subscribed", obwohl der Browser „granted" meldet.
-  /// Genau das war der Fehler, der Meldungen verhindert hat.
+  /// Geprüft wird die Subscription-`id`, nicht `optedIn` – das SDK selbst
+  /// dokumentiert, dass `optedIn` schon `true` ist, bevor eine Subscription
+  /// (Push-Token, ID) überhaupt existiert: „If the device has push
+  /// permission, but no push token or subscription ID yet, optedIn is true"
+  /// (`onesignal_flutter`, `pushsubscription.dart`). Erst die `id` entspricht
+  /// dem, was das Dashboard „Subscribed" nennt. Getrennt von [hasPermission],
+  /// weil auch die Browser-Erlaubnis allein nichts über eine erfolgreiche
+  /// OneSignal-Anmeldung aussagt – etwa wenn sie über die
+  /// Browser-Einstellungen erteilt wurde statt über [requestPermission].
   static Future<bool> isSubscribed() async {
     if (!isSupported) return false;
     try {
       return await _withSdk(
-        (os) async => os.user.pushSubscription.optedIn ?? false,
+        (os) async => os.user.pushSubscription.id != null,
       );
     } catch (_) {
       return false;
@@ -100,14 +103,15 @@ abstract final class OneSignalApi {
 
     // Bewusst nicht über isSubscribed(): Die schluckt Fehler still, hier
     // soll ein Fehlschlag beim Nachlesen sichtbar bleiben statt einfach als
-    // "nicht angemeldet" durchzugehen.
-    Future<bool> readOptedIn() => _withSdk(
-          (os) async => os.user.pushSubscription.optedIn ?? false,
+    // "nicht angemeldet" durchzugehen. Und bewusst `id`, nicht `optedIn` –
+    // siehe Doc-Kommentar auf [isSubscribed].
+    Future<bool> readSubscribed() => _withSdk(
+          (os) async => os.user.pushSubscription.id != null,
         );
 
     bool subscribed;
     try {
-      subscribed = await readOptedIn();
+      subscribed = await readSubscribed();
     } catch (error) {
       return PushEnableResult(
         error is TimeoutException
@@ -117,13 +121,15 @@ abstract final class OneSignalApi {
       );
     }
 
-    if (!subscribed) {
-      // Möglicher Wettlauf: OneSignals interner Stand könnte optIn() noch
-      // nicht nachgezogen haben. Ein einmaliger kurzer Nachschlag klärt das,
-      // bevor es als echter Fehlschlag gilt.
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+    // Möglicher Wettlauf: Die Subscription-ID kommt erst zustande, nachdem
+    // der Browser einen Push-Dienst kontaktiert und OneSignal die Antwort
+    // gespeichert hat – ein echter Netzwerk-Umweg, der spürbar länger dauern
+    // kann als das blosse Setzen von optedIn. Ein paar Sekunden nachfragen,
+    // bevor es als echter Fehlschlag gilt.
+    for (var i = 0; i < 5 && !subscribed; i++) {
+      await Future<void>.delayed(const Duration(seconds: 1));
       try {
-        subscribed = await readOptedIn();
+        subscribed = await readSubscribed();
       } catch (error) {
         return PushEnableResult(
           error is TimeoutException
@@ -138,7 +144,7 @@ abstract final class OneSignalApi {
         ? const PushEnableResult(PushEnableOutcome.granted)
         : const PushEnableResult(
             PushEnableOutcome.subscriptionFailed,
-            'optIn() erfolgreich, optedIn bleibt aber false',
+            'optIn() erfolgreich, aber keine Subscription-ID nach 5s',
           );
   }
 
@@ -245,6 +251,7 @@ extension type _User(JSObject _) implements JSObject {
 }
 
 extension type _PushSubscription(JSObject _) implements JSObject {
+  external String? get id;
   external bool? get optedIn;
   external JSPromise<JSAny?> optIn();
 }
