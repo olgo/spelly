@@ -26,6 +26,7 @@ String moveMessage(String code, [Object? detail]) => switch (code) {
       'nothing_to_exchange' => 'Wähl erst die Steine aus, die weg sollen.',
       'exchange_failed' => 'Tauschen hat nicht geklappt. Versuch es nochmal.',
       'pass_failed' => 'Passen hat nicht geklappt. Versuch es nochmal.',
+      'resign_failed' => 'Aufgeben hat nicht geklappt. Versuch es nochmal.',
       _ => 'Der Zug ging nicht durch ($code).',
     };
 

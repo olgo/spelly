@@ -78,7 +78,11 @@ Deno.serve(async (req) => {
   if (!me || !opponent) return fail("game_not_ready", 409);
 
   if (game.status !== "active") return fail("game_not_active", 409);
-  if (game.current_seat !== me.seat) return fail("not_your_turn", 409);
+  // Aufgeben ist die eine Ausnahme vom Zugzwang: Wer nicht am Zug ist, soll
+  // die Partie trotzdem beenden können, statt darauf warten zu müssen.
+  if (game.current_seat !== me.seat && kind !== "resign") {
+    return fail("not_your_turn", 409);
+  }
 
   let bag: string[] = secretRes.data.bag;
   let rack: string[] = rackRes.data.tiles;

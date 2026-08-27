@@ -7,6 +7,7 @@ import 'board_view.dart';
 import 'exchange_sheet.dart';
 import 'game_controller.dart';
 import 'rack_view.dart';
+import 'resign_sheet.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key, required this.repository, required this.gameId});
@@ -230,12 +231,12 @@ class _Actions extends StatelessWidget {
   }
 }
 
-enum _GameAction { exchange, pass }
+enum _GameAction { exchange, pass, resign }
 
-/// Passen und Tauschen liegen hinter den drei Punkten. Beides sind seltene
-/// Züge, und die Zeile hat für zwei weitere beschriftete Knöpfe keinen Platz –
-/// auf einem kleinen Telefon würden alle so schmal, dass ein Fehlgriff auf
-/// „Passen" statt „Tauschen" einen Zug kostet.
+/// Passen, Tauschen und Aufgeben liegen hinter den drei Punkten. Alle drei
+/// sind seltene Züge, und die Zeile hat für weitere beschriftete Knöpfe
+/// keinen Platz – auf einem kleinen Telefon würden alle so schmal, dass ein
+/// Fehlgriff auf „Passen" statt „Tauschen" einen Zug kostet.
 class _MoreMenu extends StatelessWidget {
   const _MoreMenu({required this.controller});
   final GameController controller;
@@ -244,9 +245,13 @@ class _MoreMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final left = controller.snapshot?.tilesLeft ?? 0;
     final bagShort = left < GameController.minBagForExchange;
+    // Anders als Passen/Tauschen geht Aufgeben zu jedem Zeitpunkt – das Menü
+    // muss sich also auch öffnen lassen, wenn der Gegner am Zug ist. Nur eine
+    // beendete Partie sperrt es ganz.
+    final isActive = controller.snapshot?.status == 'active';
 
     return PopupMenuButton<_GameAction>(
-      enabled: controller.isMyTurn && !controller.submitting,
+      enabled: isActive && !controller.submitting,
       icon: const Icon(Icons.more_vert),
       iconSize: 20,
       color: Palette.graphite,
@@ -264,9 +269,17 @@ class _MoreMenu extends StatelessWidget {
               ? 'Tauschen – Beutel fast leer'
               : 'Steine tauschen'),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: _GameAction.pass,
-          child: Text('Passen'),
+          // Vorher lief das über das Menü selbst (nur am eigenen Zug
+          // aktivierbar) – jetzt öffnet sich das Menü auch sonst, also
+          // braucht Passen seine eigene Sperre.
+          enabled: controller.isMyTurn,
+          child: const Text('Passen'),
+        ),
+        const PopupMenuItem(
+          value: _GameAction.resign,
+          child: Text('Aufgeben', style: TextStyle(color: Palette.warn)),
         ),
       ],
       onSelected: (action) async {
@@ -282,6 +295,10 @@ class _MoreMenu extends StatelessWidget {
             );
             if (chosen == null || !context.mounted) return;
             await controller.exchange(chosen);
+          case _GameAction.resign:
+            final confirmed = await showResignSheet(context);
+            if (confirmed != true || !context.mounted) return;
+            await controller.resign();
         }
       },
     );
