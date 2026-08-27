@@ -289,4 +289,20 @@ class GameController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Beendet die Partie sofort, der Gegner gewinnt. Anders als [pass] geht
+  /// das zu jedem Zeitpunkt, nicht nur am eigenen Zug – `submit-move`
+  /// verzichtet für `resign` bewusst auf den Zugzwang.
+  Future<void> resign() async {
+    _pending.clear();
+    _lastError = null;
+    try {
+      await _repo.resign(_gameId);
+      _adopt(await _repo.loadGame(_gameId));
+    } catch (_) {
+      _lastError = 'resign_failed';
+    } finally {
+      notifyListeners();
+    }
+  }
 }
