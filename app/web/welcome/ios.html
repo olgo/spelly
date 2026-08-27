@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Spelly aufs iPhone installieren">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spelly – iPhone installieren</title>
+  <link rel="icon" type="image/png" href="../favicon.png">
+
+  <style>
+    :root {
+      --bg: #0A2F31;
+      --card: #123F41;
+      --card-border: #1D5254;
+      --wood: #FBD4A4;
+      --wood-ink: #0A2F31;
+      --text: #F4E9D6;
+      --text-dim: #9FC3C2;
+      --red: #C82727;
+      --blue: #1177D6;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+    }
+
+    main {
+      width: 100%;
+      max-width: 480px;
+      padding: 28px 20px 64px;
+    }
+
+    .zurueck {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    header img {
+      width: 52px;
+      height: 52px;
+      border-radius: 13px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 800;
+    }
+    header p {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .hinweis {
+      background: rgba(200, 39, 39, 0.14);
+      border: 1px solid rgba(200, 39, 39, 0.5);
+      border-radius: 14px;
+      padding: 16px 18px;
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 28px;
+    }
+    .hinweis strong { color: var(--wood); }
+    .hinweis p { margin: 0 0 10px; }
+    .hinweis p:last-child { margin-bottom: 0; }
+    .hinweis ol { margin: 0; padding-left: 20px; }
+
+    .schritt {
+      display: flex;
+      gap: 14px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+    }
+
+    .schritt-nr {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--wood);
+      color: var(--wood-ink);
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .schritt-inhalt h2 {
+      margin: 2px 0 6px;
+      font-size: 15.5px;
+      font-weight: 700;
+    }
+    .schritt-inhalt p, .schritt-inhalt ol, .schritt-inhalt ul {
+      margin: 0 0 8px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .schritt-inhalt p:last-child,
+    .schritt-inhalt ol:last-child,
+    .schritt-inhalt ul:last-child { margin-bottom: 0; }
+    .schritt-inhalt ol, .schritt-inhalt ul { padding-left: 20px; }
+    .schritt-inhalt strong { color: var(--wood); }
+
+    .link-knopf {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 18px;
+      background: var(--wood);
+      color: var(--wood-ink);
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .abschnitt-titel {
+      margin: 36px 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .problem {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+    .problem strong { display: block; color: var(--wood); margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="zurueck" href="index.html" aria-label="Zurück zur Übersicht">← Übersicht</a>
+
+    <header>
+      <img src="../icons/Icon-512.png" alt="">
+      <div>
+        <h1>Spelly aufs iPhone</h1>
+        <p>Dauert etwa fünf Minuten</p>
+      </div>
+    </header>
+
+    <div class="hinweis">
+      <p><strong>Zwei Dinge, an denen es sonst scheitert:</strong></p>
+      <ol>
+        <li>Öffne den Link unten in <strong>Safari</strong>. Nicht in Chrome,
+          nicht in Firefox, nicht im eingebauten Browser von WhatsApp oder
+          Instagram.</li>
+        <li>Du musst die App auf den Home-Bildschirm legen (Schritt 2). Nur
+          im Browser-Tab geöffnet bekommst du keine Benachrichtigungen –
+          und erfährst nie, dass du am Zug bist.</li>
+      </ol>
+      <p>Warum so umständlich? Apple erlaubt es nicht, Apps einfach als
+        Datei zu verschicken, so wie es bei Android geht. Der Weg über den
+        Home-Bildschirm ist die einzige Möglichkeit ohne App Store. Wenn es
+        einmal liegt, merkt man den Unterschied nicht mehr.</p>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">1</span>
+      <div class="schritt-inhalt">
+        <h2>Link in Safari öffnen</h2>
+        <a class="link-knopf" href="https://olgo.github.io/spelly/">olgo.github.io/spelly</a>
+        <p>Kam der Link über WhatsApp oder ähnliches, öffnet sich zuerst ein
+          eingebauter Browser. Tippe dort unten rechts auf das Symbol mit
+          den drei Punkten oder dem Kompass und wähle
+          <strong>In Safari öffnen</strong>.</p>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">2</span>
+      <div class="schritt-inhalt">
+        <h2>Auf den Home-Bildschirm legen</h2>
+        <p>Das ist der entscheidende Schritt.</p>
+        <ol>
+          <li>Tippe unten in der Mitte auf das <strong>Teilen-Symbol</strong>
+            – das Quadrat mit dem Pfeil nach oben</li>
+          <li>Streiche in der Liste nach unten bis
+            <strong>Zum Home-Bildschirm</strong></li>
+          <li>Tippe <strong>Hinzufügen</strong> oben rechts</li>
+        </ol>
+        <p>Auf dem Home-Bildschirm liegt jetzt ein Spelly-Symbol.</p>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">3</span>
+      <div class="schritt-inhalt">
+        <h2>App über das neue Symbol starten</h2>
+        <p>Schließe Safari und starte die App über das Symbol auf dem
+          Home-Bildschirm. Ab jetzt immer so – nicht mehr über Safari.</p>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">4</span>
+      <div class="schritt-inhalt">
+        <h2>Konto anlegen</h2>
+        <p><strong>Neu hier? Konto anlegen</strong> antippen und eintragen:</p>
+        <ul>
+          <li><strong>Anzeigename</strong> – so sehen dich die anderen in der
+            Spielerliste</li>
+          <li><strong>E-Mail</strong> – eine, in die du gleich hineinschauen
+            kannst</li>
+          <li><strong>Passwort</strong> – mindestens acht Zeichen, zweimal
+            eingeben</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">5</span>
+      <div class="schritt-inhalt">
+        <h2>E-Mail bestätigen</h2>
+        <p>Du bekommst eine Mail. Tippe den Link darin an. Ohne diesen
+          Schritt geht die Anmeldung nicht.</p>
+        <p>Nichts angekommen? Schau in den Spam-Ordner. Falls dort auch
+          nichts ist: zurück in die App, <strong>Mail nochmal senden</strong>.</p>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">6</span>
+      <div class="schritt-inhalt">
+        <h2>Anmelden und Benachrichtigungen erlauben</h2>
+        <p>Melde dich an. Die App fragt nach Erlaubnis für
+          Benachrichtigungen – <strong>sag ja</strong>. Sonst erfährst du
+          nicht, wenn du am Zug bist, und das Spiel steht still.</p>
+        <p>Ab jetzt bleibst du angemeldet.</p>
+      </div>
+    </div>
+
+    <div class="schritt">
+      <span class="schritt-nr">7</span>
+      <div class="schritt-inhalt">
+        <h2>Losspielen</h2>
+        <p>Reiter <strong>Spieler:innen</strong> öffnen, jemanden aussuchen,
+          <strong>Herausfordern</strong>. Die Person bekommt eine Meldung
+          und kann annehmen oder ablehnen.</p>
+        <p>Umgekehrt: fordert dich jemand heraus, steht das oben unter
+          <strong>Partien</strong> mit <strong>Annehmen</strong> und
+          <strong>Ablehnen</strong>.</p>
+      </div>
+    </div>
+
+    <p class="abschnitt-titel">Wenn etwas nicht klappt</p>
+
+    <div class="problem">
+      <strong>„Zum Home-Bildschirm" steht nicht in der Liste</strong>
+      Du bist nicht in Safari. Zurück zu Schritt 1.
+    </div>
+    <div class="problem">
+      <strong>Keine Benachrichtigungen, obwohl erlaubt</strong>
+      Prüfe drei Dinge: Startest du die App über das Symbol auf dem
+      Home-Bildschirm, nicht über Safari? Ist unter
+      <em>Einstellungen → Spelly → Mitteilungen</em> alles eingeschaltet?
+      Läuft iOS 16.4 oder neuer (<em>Einstellungen → Allgemein →
+      Softwareupdate</em>)? Ältere Fassungen können keine Benachrichtigungen
+      an Web-Apps ausliefern.
+    </div>
+    <div class="problem">
+      <strong>Es wurde nach Erlaubnis nie gefragt</strong>
+      Das passiert, wenn die App noch im Browser lief, als du dich angemeldet
+      hast. App vom Home-Bildschirm löschen, ab Schritt 1 neu, dann über das
+      Symbol starten.
+    </div>
+    <div class="problem">
+      <strong>Nach dem Löschen sind Partien weg?</strong>
+      Nein. Alles liegt auf dem Server, du musst dich nur wieder anmelden.
+    </div>
+
+    <p class="abschnitt-titel">Aktualisierungen</p>
+    <div class="problem">
+      Passieren von selbst. Beim Start holt sich die App die neueste
+      Fassung – du musst nichts tun.
+    </div>
+  </main>
+</body>
+</html>
