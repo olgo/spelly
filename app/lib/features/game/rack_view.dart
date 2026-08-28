@@ -39,10 +39,38 @@ class RackView extends StatelessWidget {
             for (var i = 0; i < tiles.length; i++)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: _DraggableTile(
-                  letter: tiles[i],
-                  enabled: controller.isMyTurn,
-                  onBlankChosen: (letter) => _showBlankPicker(context, letter),
+                // Jede Position ist zugleich Ziel fürs Umsortieren – ein
+                // Stein, der von woanders im Rack kommt (fromRackIndex
+                // gesetzt), landet hier auf dieser Position. Ein Stein vom
+                // Brett (fromRackIndex null) lehnt dieses Ziel ab und fällt
+                // durch zum äusseren DragTarget oben, das ihn aufnimmt.
+                child: DragTarget<DragTile>(
+                  onWillAcceptWithDetails: (details) =>
+                      details.data.fromRackIndex != null,
+                  onAcceptWithDetails: (details) => controller.reorderRack(
+                    details.data.fromRackIndex!,
+                    i,
+                  ),
+                  builder: (context, candidate, _) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(Metrics.tileRadius + 3),
+                      border: Border.all(
+                        color: candidate.isEmpty
+                            ? Colors.transparent
+                            : Palette.signal,
+                        width: 2,
+                      ),
+                    ),
+                    child: _DraggableTile(
+                      index: i,
+                      letter: tiles[i],
+                      enabled: controller.isMyTurn,
+                      onBlankChosen: (letter) =>
+                          _showBlankPicker(context, letter),
+                    ),
+                  ),
                 ),
               ),
             if (tiles.isEmpty)
@@ -108,12 +136,19 @@ class RackView extends StatelessWidget {
 
 class _DraggableTile extends StatefulWidget {
   const _DraggableTile({
+    required this.index,
     required this.letter,
     required this.enabled,
     required this.onBlankChosen,
   });
 
+  final int index;
   final String letter;
+
+  /// Ob gerade der eigene Zug läuft. Steuert nur noch die Abblendung, kein
+  /// hartes Sperren mehr: Umsortieren im Rack bleibt jederzeit möglich,
+  /// genau wie Mischen – nur das Ablegen aufs Brett prüft weiterhin
+  /// isMyTurn, und zwar dort in `_Cell` (board_view.dart).
   final bool enabled;
   final Future<String?> Function(String) onBlankChosen;
 
@@ -142,8 +177,8 @@ class _DraggableTileState extends State<_DraggableTile> {
     final isBlank = widget.letter == '?';
     final shown = isBlank ? (_chosen ?? '?') : widget.letter;
     final face = RackTileFace(letter: shown, blank: isBlank);
-
-    if (!widget.enabled) return Opacity(opacity: 0.45, child: face);
+    final dimmed =
+        widget.enabled ? face : Opacity(opacity: 0.45, child: face);
 
     if (isBlank && _chosen == null) {
       return GestureDetector(
@@ -151,15 +186,16 @@ class _DraggableTileState extends State<_DraggableTile> {
           final chosen = await widget.onBlankChosen(widget.letter);
           if (chosen != null && mounted) setState(() => _chosen = chosen);
         },
-        child: face,
+        child: dimmed,
       );
     }
 
     return Draggable<DragTile>(
       // Kein fromIndex: Dieser Stein kommt vom Rack, nicht vom Brett.
-      data: DragTile(shown, isBlank: isBlank),
+      // fromRackIndex verrät die Position im Rack fürs Umsortieren.
+      data: DragTile(shown, isBlank: isBlank, fromRackIndex: widget.index),
       feedback: RackTileFace(letter: shown, blank: isBlank, elevated: true),
-      childWhenDragging: Opacity(opacity: 0.25, child: face),
+      childWhenDragging: Opacity(opacity: 0.25, child: dimmed),
       // Nochmal antippen erlaubt, den Blanko-Buchstaben zu ändern, solange
       // der Stein noch auf dem Rack liegt.
       onDragCompleted: () {
@@ -171,9 +207,9 @@ class _DraggableTileState extends State<_DraggableTile> {
                 final chosen = await widget.onBlankChosen(widget.letter);
                 if (chosen != null && mounted) setState(() => _chosen = chosen);
               },
-              child: face,
+              child: dimmed,
             )
-          : face,
+          : dimmed,
     );
   }
 }
