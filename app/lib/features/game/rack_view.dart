@@ -38,7 +38,7 @@ class RackView extends StatelessWidget {
           children: [
             for (var i = 0; i < tiles.length; i++)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 2),
                 // Jede Position ist zugleich Ziel fürs Umsortieren – ein
                 // Stein, der von woanders im Rack kommt (fromRackIndex
                 // gesetzt), landet hier auf dieser Position. Ein Stein vom
@@ -235,7 +235,7 @@ class RackTileFace extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 42,
+        width: 40,
         height: 48,
         decoration: BoxDecoration(
           color: Palette.bone,

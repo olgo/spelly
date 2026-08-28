@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../data/game_repository.dart';
@@ -35,14 +37,26 @@ class GameController extends ChangeNotifier {
   bool _submitting = false;
   String? _lastError;
 
+  /// Felder, die im letzten Zug neu dazukamen – eigener oder gegnerischer.
+  /// Nur für das kurze Aufblitzen in board_view.dart, sonst ohne Bedeutung.
+  Set<int> _flashIndices = {};
+  Timer? _flashTimer;
+
   GameSnapshot? get snapshot => _snapshot;
   List<Placement> get pending => List.unmodifiable(_pending);
   MovePreview? get preview => _preview;
   bool get submitting => _submitting;
   bool get dictReady => _dictReady;
   String? get lastError => _lastError;
+  Set<int> get flashIndices => _flashIndices;
 
   bool get isMyTurn => _snapshot?.isMyTurn ?? false;
+
+  @override
+  void dispose() {
+    _flashTimer?.cancel();
+    super.dispose();
+  }
 
   /// Ob der Beutel noch genug für einen Tausch hergibt.
   bool get canExchange =>
@@ -105,10 +119,12 @@ class GameController extends ChangeNotifier {
 
     _repo.watchGame(_gameId).listen(
       (snapshot) {
+        final beforeBoard = _snapshot?.board;
         _adopt(snapshot);
         // Ein Zug des Gegners macht eigene Ablagen hinfällig.
         if (_pending.isNotEmpty && !snapshot.isMyTurn) _pending.clear();
         _recompute();
+        _flashNewTiles(beforeBoard, snapshot.board);
       },
       // Ein einzelnes fehlgeschlagenes Update darf die Verbindung nicht
       // stillschweigend abwürgen - beim nächsten Zug kommt sonst nie wieder
@@ -229,6 +245,29 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Markiert Felder, die zwischen [before] und [after] von leer auf belegt
+  /// gewechselt sind, für ein kurzes Aufblitzen – läuft nach jedem Zug, dem
+  /// eigenen wie dem des Gegners (siehe [start] und [submit]).
+  void _flashNewTiles(List<Tile?>? before, List<Tile?> after) {
+    if (before == null) return;
+    final changed = <int>{
+      for (var i = 0; i < after.length; i++)
+        if (before[i] == null && after[i] != null) i,
+    };
+    // Nach einem eigenen Zug liefert das Realtime-Update denselben Stand oft
+    // noch einmal – dann ist der Vergleich schon leer, kein doppeltes
+    // Aufblitzen.
+    if (changed.isEmpty) return;
+
+    _flashTimer?.cancel();
+    _flashIndices = changed;
+    notifyListeners();
+    _flashTimer = Timer(const Duration(milliseconds: 1000), () {
+      _flashIndices = {};
+      notifyListeners();
+    });
+  }
+
   void _recompute() {
     if (_pending.isEmpty) {
       _preview = null;
@@ -253,11 +292,14 @@ class GameController extends ChangeNotifier {
     _lastError = null;
     notifyListeners();
 
+    final beforeBoard = _snapshot?.board;
     try {
       await _repo.submitMove(gameId: _gameId, placements: _pending);
       _pending.clear();
       _recompute();
-      _adopt(await _repo.loadGame(_gameId));
+      final next = await _repo.loadGame(_gameId);
+      _adopt(next);
+      _flashNewTiles(beforeBoard, next.board);
       return true;
     } on MoveRejected catch (e) {
       // Der Server hat anders entschieden als die Vorschau. Das darf nicht

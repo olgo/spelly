@@ -109,7 +109,14 @@ class _Cell extends StatelessWidget {
           return _EmptySquare(index: index, size: size, hovering: hovering);
         }
 
-        final face = _TileFace(tile: tile!, size: size, isPending: isPending);
+        final face = _TileFace(
+          tile: tile!,
+          size: size,
+          isPending: isPending,
+          // Nur bestätigte Steine blitzen auf – ein pending Stein kann nie
+          // gleichzeitig hier stehen, siehe GameController._flashNewTiles.
+          flashing: !isPending && controller.flashIndices.contains(index),
+        );
         if (!isPending) return face;
 
         // Nur eigene, noch nicht abgeschickte Steine lassen sich bewegen – und
@@ -220,17 +227,23 @@ class _TileFace extends StatelessWidget {
     required this.tile,
     required this.size,
     this.isPending = false,
+    this.flashing = false,
   });
 
   final Tile tile;
   final double size;
   final bool isPending;
 
+  /// Kurz nach dem Legen (eigener Zug oder der des Gegners) – siehe
+  /// GameController.flashIndices. Zeigt einen abklingenden Schein, dieselbe
+  /// Signalfarbe wie der pending-Rahmen oben, nur grösser und animiert.
+  final bool flashing;
+
   @override
   Widget build(BuildContext context) {
     final value = tile.blank ? 0 : (letterValues[tile.letter] ?? 0);
 
-    return Padding(
+    final card = Padding(
       padding: const EdgeInsets.all(Metrics.cellGap / 2),
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -278,6 +291,37 @@ class _TileFace extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    if (!flashing) return card;
+
+    // Läuft einmalig beim ersten Bau mit flashing=true von 1 auf 0 – der
+    // Controller entfernt das Feld nach 1000ms wieder aus flashIndices,
+    // danach verschwindet der Schein mit dem nächsten Rebuild ohnehin.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1, end: 0),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOut,
+      builder: (context, t, child) => Stack(
+        children: [
+          child!,
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Metrics.tileRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Palette.signal.withValues(alpha: 0.55 * t),
+                    blurRadius: 10 * t + 2,
+                    spreadRadius: 2 * t,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      child: card,
     );
   }
 }
