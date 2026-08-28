@@ -199,6 +199,36 @@ class GameController extends ChangeNotifier {
     return true;
   }
 
+  /// Sortiert die sichtbaren Rack-Steine um. [from]/[to] sind Positionen in
+  /// [availableRack] (was tatsächlich gerendert wird), nicht in [_rackOrder]
+  /// – abgelegte (pending) Steine sind unsichtbar und werden hinten
+  /// angehängt, sobald man sie zurücknimmt. Ihre genaue Position dort spielt
+  /// keine Rolle: Reine Anzeige, wie schon bei [_rackOrder] dokumentiert.
+  ///
+  /// Auch erlaubt, während der Gegner am Zug ist – wie [shuffleRack]: Genau
+  /// dann sitzt man davor und sucht ein Wort.
+  void reorderRack(int from, int to) {
+    final visible = List<String>.of(availableRack);
+    if (from < 0 ||
+        from >= visible.length ||
+        to < 0 ||
+        to >= visible.length ||
+        from == to) {
+      return;
+    }
+    visible.insert(to, visible.removeAt(from));
+
+    final hidden = <String>[];
+    final source = List<String>.of(_rackOrder ?? _snapshot?.rack ?? const []);
+    for (final p in _pending) {
+      final need = p.blank ? '?' : p.letter;
+      final at = source.indexOf(need);
+      if (at != -1) hidden.add(source.removeAt(at));
+    }
+    _rackOrder = [...visible, ...hidden];
+    notifyListeners();
+  }
+
   void _recompute() {
     if (_pending.isEmpty) {
       _preview = null;

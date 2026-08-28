@@ -285,9 +285,20 @@ class _TileFace extends StatelessWidget {
 /// Ein Stein unterwegs. [fromIndex] sagt, woher er kommt: null heisst Rack,
 /// sonst das Brettfeld, das er beim Ablegen wieder freigibt. Ohne diese Angabe
 /// wüsste das Zielfeld nicht, ob es einen Stein aufnimmt oder einen umsetzt.
+///
+/// [fromRackIndex] ist die Position im Rack, falls der Stein von dort kommt
+/// – nur fürs Umsortieren innerhalb des Racks wichtig (siehe `rack_view.dart`).
+/// Brett-Felder schauen sich dieses Feld nie an, ein Stein mit gesetztem
+/// [fromRackIndex] landet dort also ganz normal wie jeder Rack-Stein.
 class DragTile {
-  const DragTile(this.letter, {this.isBlank = false, this.fromIndex});
+  const DragTile(
+    this.letter, {
+    this.isBlank = false,
+    this.fromIndex,
+    this.fromRackIndex,
+  });
   final String letter;
   final bool isBlank;
   final int? fromIndex;
+  final int? fromRackIndex;
 }
